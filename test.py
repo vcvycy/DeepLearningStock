@@ -1,0 +1,1 @@
+from common import stock_pb2
