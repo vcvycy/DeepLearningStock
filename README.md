@@ -1,5 +1,6 @@
 # DeepLearningStock
 ## 代码架构
+* update.sh            # 更新项目依赖, 编译Protobuf文件
 * run                  # 配置文件
   * run_source.sh     
   * run_feature.sh
@@ -10,8 +11,8 @@
     * extract_feature.yaml # 抽特征
     * train.yaml           # 模型训练
   * stock.proto        # 中间数据保存
-    * class Stock      # 股票数据(k线图、市值等)
-    * class Ins        # 训练数据   
+    * message Stock      # 股票数据(k线图、市值等)
+    * Message Ins        # 训练数据   
 * common               # 通用代码
   * utils.py
   * dag_enging.py      # 运行DAG配置，多线程跑
