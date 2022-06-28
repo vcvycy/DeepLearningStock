@@ -16,8 +16,9 @@ message Candle {      // k线图一个蜡烛
     float high  = 3;
     float low   = 4;
     float close = 5;
-    float amount= 6;  // 成交量
-    float vol   = 7;  // 成交额
+    float amount= 6;  // 成交额
+    float vol   = 7;  // 成交量
+    float turnover=8; // 换手率
 }
 message KLine {
     repeated Candle candles = 1;
@@ -25,7 +26,7 @@ message KLine {
 }
 // 股票相关数据：k线图、市盈率、市值等
 message Stock {                  
-    string name            = 1;  // 名字
+    string name            = 1;  // 名字, 唯一标识
     KLine kline            = 2;  // k线图 kline[0]是最晚的时间
     Currency base          = 3;  // 货币单位(人民币、美元等)
     float market_cat       = 4;  // 市值

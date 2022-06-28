@@ -1,3 +1,5 @@
 protobuf
 numpy
 tensorflow
+tushare
+bottle
