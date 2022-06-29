@@ -1,4 +1,4 @@
 *_pb2.py
 *.pyc
 *pycache*
-./tmp
+**tmp**

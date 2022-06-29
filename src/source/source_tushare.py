@@ -1,4 +1,4 @@
-from source import Source
+from source.source import Source
 import tushare as ts
 import sys
 sys.path.append("..")
@@ -10,11 +10,11 @@ class TushareSource(Source):
     def __init__(self, conf):
         super(TushareSource, self).__init__(conf)
         self.batch_size = conf.get("batch_size", 5)    # 一次返回多少context
-        self.client = ts.pro_api(conf.get("apikey"))
+        self.client = ts.pro_api(conf.get("api_key"))
         self.all_stocks = self.get_all_stocks()
         self.stock_size = self.all_stocks.shape[0]
         logging.error("TushareSource : stock size: %s" %(self.stock_size))
-        print(self.all_stocks)
+        logging.error(self.all_stocks)
         self.cursor = 0
         return 
     
@@ -39,13 +39,7 @@ class TushareSource(Source):
             "list_date"
         ])
         return df 
-
-    def fetch_one(self):
-        if self.cursor >= self.stock_size:
-            return None
-
-        ts_code =  self.all_stocks.at[self.cursor, "ts_code"]
-        self.cursor += 1
+    def get_tushare_kline(self, ts_code):
         df = self.client.daily(**{
             "ts_code": ts_code,
             "trade_date": "",
@@ -67,6 +61,41 @@ class TushareSource(Source):
             "amount"
         ])
         return df
+    def load_kline_from_df(self, kline_df):
+        # data frame -> proto::KLine
+        candles = []
+        for i in range(kline_df.shape[0]):
+            c = Candle()
+            c.high = kline_df.at[i, "high"]
+            c.low = kline_df.at[i, "low"]
+            c.open = kline_df.at[i, "open"]
+            c.close = kline_df.at[i, "close"]
+            c.pre_close = kline_df.at[i, "pre_close"]
+            c.high = kline_df.at[i, "high"]
+            c.date = kline_df.at[i, "trade_date"]
+            c.vol = kline_df.at[i, "vol"]
+            c.amount = kline_df.at[i, "amount"]
+            candles.append(c)
+        return candles
+    def fetch_one_context(self):
+        if self.cursor >= self.stock_size:
+            return None
+
+        ts_code =  self.all_stocks.at[self.cursor, "ts_code"]
+        # 创建context
+        stock_id = self.all_stocks.at[self.cursor, "symbol"]
+        context = Context(ts_code)
+        # stock pb数据
+        # 获取k线数据
+        kline_df = self.get_tushare_kline(ts_code)
+        candles = self.load_kline_from_df(kline_df)
+        context.set("source.kline", candles)
+        context.set("source.name", self.all_stocks.at[self.cursor, "name"])
+        context.set("source.time_interval", TimeInterval.Day)  # 日线图
+        context.set("source.ts_code", ts_code)
+        context.set("source.ipo_time", self.all_stocks.at[self.cursor, "list_date"])
+        self.cursor += 1
+        return context
     def fetch(self):
         # 获取股票数据
         
@@ -87,3 +116,4 @@ if __name__ == "__main__":
     } 
     tushare = TushareSource(conf)
     print(tushare.fetch_one())
+    # print(tushare.fetch_one())

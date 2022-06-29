@@ -1,14 +1,18 @@
+from common.utils import *
 class Context:
     def __init__(self, id):
         self.id = id         # 全局唯一标识
         self.read_only = {}
         return 
+    def __str__(self):
+        s = "[Context] row_key: %s\n" %(self.id)
+        s += pretty_json(self.read_only, "  ")
+        return s
     def __parse_flag_key(self, flag_key):
         return flag_key.split(".")
     
     def set(self, flag_key, value):
         keys = self.__parse_flag_key(flag_key)
-        print(keys)
         keys_len = len(keys)
         read_only = self.read_only
 
