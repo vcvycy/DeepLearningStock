@@ -5,6 +5,8 @@ import logging
 import argparse
 import yaml
 import importlib
+import threading
+
 def init():
     logger = logging.getLogger(__name__)  
     logger.setLevel(logging.DEBUG)
@@ -14,11 +16,15 @@ def init():
     logger.addHandler(handler)
     return 
 
-
 class Engine():
-    def __init__(self, yaml_path):
+    def __init__(self, yaml_path, thread_num):
         ## 载入yaml配置文件
         self.conf = yaml.safe_load(open(yaml_path, 'r') .read())
+
+        ## source_mutext 多线程同时处理context，获取context时加锁
+        self.source_mutex = threading.Lock()
+        self.thread_num = thread_num
+
         logging.error(pretty_json(self.conf))
         return 
 
@@ -43,8 +49,9 @@ class Engine():
         return 
 
     def fetch_one_context(self):
+        # 互斥锁
+        self.source_mutex.acquire()
         # 整个队列用完了
-        print("fetch")
         if self.source_cursor >= len(self.sources):
             return
         cur_source = self.sources[self.source_cursor]
@@ -53,23 +60,50 @@ class Engine():
             # 当前source用完了
             self.source_cursor += 1
             return self.fetch_one_context()
+        # 去锁
+        self.source_mutex.release()
         return context
 
+    def init_steps(self):
+        """
+          获取所有的step
+        """
+        step_list = self.conf["step"]["step_list"]
+        self.steps = []
+        self.name2step = {}
+        for step in step_list:
+            name = step["name"]
+            step_obj = self.get_obj_by_conf(step)
+            self.steps.append(step_obj)
+            self.name2step["name"] = step_obj
+        return self.steps
+    
     def run(self):
         """
         conf: yaml配置文件
         """
         ## 初始化source
         self.init_sources()
-        # 
-        context = self.fetch_one_context()
-        print(context)
+        ## 一个step一个step执行
+        self.init_steps()
+        while True:
+            context = self.fetch_one_context()
+            if context is None:
+                break
+            print(context)
+            input("..")
+            # # step 逐一执行
+            # for step in self.steps:
+            #     step.execute(context)
+            # print(context)
+            # break
         return 
 
 if __name__ == "__main__":
     init()
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', help='yaml配置文件', default = "tushare.yaml") 
+    parser.add_argument('--thread_num', default = 1)
     args = parser.parse_args()
-    engine = Engine(args.config)
+    engine = Engine(args.config, args.thread_num)
     engine.run()

@@ -1,0 +1,22 @@
+meta:
+  name: tushare_yaml
+source:                 # 从哪些地方获取数据
+  source_list:
+  - name: tushare_source
+    path: source.source_tushare 
+    class: TushareSource
+    args:
+      api_key: e2d615dd1d6a00f48b84eb43f2aa64a413c190b7295a6ab6729df2a5
+      sample_recent_days:    30   # 股票采样, 最近N天
+      sample_interval_days:  5    # 股票采样，间隔N天生成一个样本
+      sample_min_train_days: 30   # 至少30天数据作为训练数据
+
+# step 顺序执行
+step:
+  step_list:
+    - name: feature
+      path: step.feature_step
+      class: FeatureStep
+      args:
+
+    

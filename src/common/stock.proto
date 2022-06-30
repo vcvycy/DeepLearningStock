@@ -30,8 +30,9 @@ message KLine {
 message Stock {                  
     string symbol          = 1;  // 股票ID, 如000001
     string name            = 2;  // 
-    KLine kline            = 3;  // k线图 kline[0]是最晚的时间
-    Currency base          = 4;  // 货币单位(人民币、美元等)
-    float market_cat       = 5;  // 市值
-    float per              = 6;  // 市盈率 price earning ratio 
+    KLine kline            = 3;  // k线图 作为训练数据
+    KLine kline_label      = 4;  // k线图 作为label用
+    Currency base          = 5;  // 货币单位(人民币、美元等)
+    float market_cat       = 6;  // 市值
+    float per              = 7;  // 市盈率 price earning ratio 
 } 
