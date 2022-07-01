@@ -18,5 +18,19 @@ step:
       path: step.feature_step
       class: FeatureStep
       args:
-
-    
+    - name: label          # 生成label
+      path: step.label_step
+      class: LabelStep
+      args:
+        label_confs:
+          - type : max           # 表示接下来days天，如果涨幅超过binary_thre，则为正例
+            days: 1
+          - type : max
+            days: 3
+          - type : max
+            days: 7
+          - type : max
+            days: 14
+          - type : max
+            days: 30
+            

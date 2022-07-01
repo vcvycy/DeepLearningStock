@@ -74,6 +74,7 @@ class Engine():
         for step in step_list:
             name = step["name"]
             step_obj = self.get_obj_by_conf(step)
+            step_obj.name = name
             self.steps.append(step_obj)
             self.name2step["name"] = step_obj
         return self.steps
@@ -90,12 +91,11 @@ class Engine():
             context = self.fetch_one_context()
             if context is None:
                 break
+            # step 逐一执行
+            for step in self.steps:
+                step.execute(context)
             print(context)
             input("..")
-            # # step 逐一执行
-            # for step in self.steps:
-            #     step.execute(context)
-            # print(context)
             # break
         return 
 
