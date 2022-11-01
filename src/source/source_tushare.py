@@ -4,6 +4,7 @@ import sys
 sys.path.append("..")
 from common.context import Context
 from common.stock_pb2 import *
+from common.candle import Candle, Kline
 import logging
 
 class TushareSource(Source):
@@ -16,8 +17,8 @@ class TushareSource(Source):
 
         # 股票采样，生成context
         self.sample_recent_days = conf.get("sample_recent_days", 30)
-        self.sample_interval_days = conf.get("sample_interval_days", 5)
         self.sample_min_train_days = conf.get("sample_min_train_days", 30)
+        self.label_days = conf.get("label_days", 7)
 
         # 一次取多个context，保存在context_cache
         self.context_cache = []
@@ -51,7 +52,7 @@ class TushareSource(Source):
     
     def load_kline_from_df(self, kline_df):
         # data frame -> proto::KLine
-        candles = []
+        kline = Kline() 
         for i in range(kline_df.shape[0]):
             c = Candle()
             c.high = kline_df.at[i, "high"]
@@ -63,8 +64,8 @@ class TushareSource(Source):
             c.date = kline_df.at[i, "trade_date"]
             c.vol = kline_df.at[i, "vol"]
             c.amount = kline_df.at[i, "amount"]
-            candles.append(c)
-        return candles
+            kline.add(c)
+        return kline
     
     def get_kline_by_ts_code(self, ts_code):
         # 从tushare获取k线图
@@ -88,7 +89,7 @@ class TushareSource(Source):
             "vol",
             "amount"
         ])
-        print(df)
+        # print(df)
         return self.load_kline_from_df(df)
 
     def update_context_cache(self):
@@ -104,13 +105,13 @@ class TushareSource(Source):
         contexts = []
         # 获取k线数据
         kline = self.get_kline_by_ts_code(ts_code)
-        for training_idx in range(0, len(kline), self.sample_interval_days):
-            # 从 [training_idx, ...] 作为训练数据,  [0.. training_idx] 作为label
-            context = Context(ts_code)
-            candle = kline[training_idx]       # 训练数据最后一个蜡烛
-            # stock pb数据 
-            context.set("source.kline", kline[training_idx:])
-            context.set("source.kline_label", kline[:training_idx])
+        for idx in range(self.label_days, len(kline)):
+            # 从 [idx, ...] 作为训练数据,  [0.. idx] 作为label
+            candle = kline[idx]       # 训练数据最后一个蜡烛
+            context = Context("%s_%s" %(ts_code, candle.date))
+            # stock pb数据  
+            context.set("source.kline", Kline(kline.candles[idx:]))
+            context.set("source.kline_label", Kline(kline.candles[:idx]))
             context.set("source.name", self.all_stocks.at[self.cursor, "name"])
             context.set("source.time_interval", TimeInterval.Day)  # 日线图
             context.set("source.ts_code", ts_code)
@@ -128,10 +129,10 @@ class TushareSource(Source):
         self.context_cache = self.context_cache[1:]
         return context
 
-    def fetch(self):
-        # 获取股票数据
+    # def fetch(self):
+    #     # 获取股票数据
         
-        return 
+    #     return 
 
 if __name__ == "__main__":
     # 只能在上一级目录测试

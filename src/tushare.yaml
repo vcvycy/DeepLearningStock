@@ -8,29 +8,39 @@ source:                 # 从哪些地方获取数据
     args:
       api_key: e2d615dd1d6a00f48b84eb43f2aa64a413c190b7295a6ab6729df2a5
       sample_recent_days:    30   # 股票采样, 最近N天
-      sample_interval_days:  5    # 股票采样，间隔N天生成一个样本
-      sample_min_train_days: 30   # 至少30天数据作为训练数据
+      sample_min_train_days: 1    # 至少N天数据作为训练数据
+      label_days:            1    # 至少N天的label数据
 
 # step 顺序执行
 step:
   step_list:
-    - name: feature
+    - name: raw_feature
       path: step.feature_step
       class: FeatureStep
       args:
-    - name: label          # 生成label
-      path: step.label_step
-      class: LabelStep
-      args:
-        label_confs:
-          - type : max           # 表示接下来days天，如果涨幅超过binary_thre，则为正例
-            days: 1
-          - type : max
-            days: 3
-          - type : max
-            days: 7
-          - type : max
-            days: 14
-          - type : max
-            days: 30
-            
+        out_key : "raw_feature"
+    
+    - name: fid_extraction
+      path: step.fid_extraction_step
+      class: FidExtractionStep
+      args: 
+        feature_list : "feature_list.yaml"
+        in_key : "raw_feature" 
+        out_key: "feature" 
+
+    # - name: label          # 生成label
+    #   path: step.label_step
+    #   class: LabelStep
+    #   args:
+    #     label_confs:
+    #       - type : max           # 表示接下来days天，如果涨幅超过binary_thre，则为正例
+    #         days: 1
+    #       - type : max
+    #         days: 3
+    #       - type : max
+    #         days: 7
+    #       - type : max
+    #         days: 14
+    #       - type : max
+    #         days: 30
+          

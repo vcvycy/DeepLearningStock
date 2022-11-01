@@ -1,0 +1,8 @@
+feature_columns: 
+  - name : rise_3d
+    depends : rise_3d
+    slot : 1
+    method : LinearDiscrete 
+    args:    # 线性分桶离散化
+      start: 0
+      step: 0.005
