@@ -1,8 +1,19 @@
 feature_columns: 
-  - name : rise_3d
-    depends : rise_3d
+  - name : rise_3d         # 最近3天涨跌
+    depends : recent_rise.rise_3d
     slot : 1
     method : LinearDiscrete 
     args:    # 线性分桶离散化
       start: 0
       step: 0.005
+
+  - name : rise_7d         # 最近7天涨跌
+    depends : recent_rise.rise_7d
+    slot : 2
+    method : LinearDiscrete 
+    args:    # 线性分桶离散化
+      start: 0
+      step: 0.005
+
+  # - name : date
+  #   depends

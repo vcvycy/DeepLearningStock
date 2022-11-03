@@ -1,6 +1,6 @@
 from step.step import Step
 import yaml
-import source.feature_methods as feature_methods 
+import source.feature_hash as feature_hash 
 class FidExtractionStep(Step):
     def __init__(self, conf):
         super(FidExtractionStep, self).__init__(conf)
@@ -15,7 +15,6 @@ class FidExtractionStep(Step):
         return []
     def execute(self, context):
         feature = {
-            "fids" : []
         }  
         for fc in self.feature_list.get("feature_columns"):
             # 获取参数 
@@ -23,11 +22,11 @@ class FidExtractionStep(Step):
             args = fc.get("args")
             slot = fc.get("slot")
             # 获取要执行的函数
-            method = getattr(feature_methods, fc.get("method"))()
-            # 执行函数
-            raw_features = [context.get("%s.%s" %(self.in_key, d)) for d in depends]
+            method = getattr(feature_hash, fc.get("method"))()
+            # 执行函数 
+            raw_features = [context.get("%s.%s" %(self.in_key, d)) for d in depends] 
             # 特征写到fids
-            feature["fids"].extend(method(raw_features, args, slot))
-
+            key = "%s_slot_%s" %(fc.get("name"), slot)
+            feature[key] = method(raw_features, args, slot)
         context.set(self.out_key, feature)
         return 

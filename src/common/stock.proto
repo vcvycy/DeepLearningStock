@@ -1,4 +1,5 @@
 syntax = "proto3";
+// import "google/protobuf/struct.proto";
 enum TimeInterval {  // k线图时长
     Day     = 0;
     Week    = 1;
@@ -9,6 +10,17 @@ enum TimeInterval {  // k线图时长
 enum Currency {
     CNY  = 0;         // 人民币
     USD  = 1;         // 美元
+}
+message FeatureColumn {
+    string name = 1;
+    repeated uint64 fids = 2;
+}
+message Instance {
+    repeated FeatureColumn feature  = 1;
+    map<string, float> label = 2;
+    string raw_feature_json  = 3;
+    string name              = 4;         
+    string ts_code           = 5;
 }
 // message CandlePB {      // k线图一个蜡烛
 //     int64 time  = 1;  // 开始时间

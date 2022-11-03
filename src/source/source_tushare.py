@@ -6,6 +6,7 @@ from common.context import Context
 from common.stock_pb2 import *
 from common.candle import Candle, Kline
 import logging
+from common.utils import *
 
 class TushareSource(Source):
     def __init__(self, conf):
@@ -105,6 +106,7 @@ class TushareSource(Source):
         contexts = []
         # 获取k线数据
         kline = self.get_kline_by_ts_code(ts_code)
+        sub_ctx = {}
         for idx in range(self.label_days, len(kline)):
             # 从 [idx, ...] 作为训练数据,  [0.. idx] 作为label
             candle = kline[idx]       # 训练数据最后一个蜡烛
@@ -116,6 +118,7 @@ class TushareSource(Source):
             context.set("source.time_interval", TimeInterval.Day)  # 日线图
             context.set("source.ts_code", ts_code)
             context.set("source.train_date", candle.date)
+            context.set("source.timestamp", str2timestamp(candle.date, "%Y%m%d"))
             contexts.append(context)
         self.cursor += 1
         self.context_cache = contexts
