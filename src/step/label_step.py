@@ -7,12 +7,10 @@ class LabelStep(Step):
         self.out_key = conf.get("out_key", "label")
         pass
 
-    def next_n_days_high_ratio_method(self, context,  conf):
+    def next_n_days_high_ratio_method(self, context,  conf, labels):
         """
             接下来的N天内，最高点涨幅是多少
         """
-        labels = {}
-        # print("conf: %s" %(conf))
         for d in conf["days"].split(","):
             d = int(d) 
             kline_label = context.get("source.kline_label")
@@ -24,15 +22,15 @@ class LabelStep(Step):
             if open_price <= 0.01:
                 # 加个太低，不写, 避免出现负数
                 return 
-            labels["%sd" %(d)] = reach_max_price/open_price - 1.0 
-        # print("labels: %s" %(labels))
+            labels["next_%sd_high_price" %(d)] = reach_max_price/open_price - 1.0  
         return labels
     
     def execute(self, context):
+        labels = {}
         for label_conf in self.label_confs:
             method = label_conf["method"]
             conf = label_conf["conf"]
             # 调用对应的gen_label函数
-            labels = getattr(self, method)(context, conf)
-            context.set("%s.%s" %(self.out_key, method), labels)
+            getattr(self, method)(context, conf, labels)
+        context.set(self.out_key, labels)
         return 

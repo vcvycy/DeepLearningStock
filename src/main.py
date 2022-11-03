@@ -48,18 +48,18 @@ class Engine():
         self.source_cursor = 0
         return 
 
-    def fetch_one_context(self):
+    def get_context(self):
         # 互斥锁
         self.source_mutex.acquire()
         # 整个队列用完了
         if self.source_cursor >= len(self.sources):
             return
         cur_source = self.sources[self.source_cursor]
-        context = cur_source.fetch_one_context()
+        context = cur_source.get_context()
         if context is None:
             # 当前source用完了
             self.source_cursor += 1
-            return self.fetch_one_context()
+            return self.get_context()
         # 去锁
         self.source_mutex.release()
         return context
@@ -88,15 +88,12 @@ class Engine():
         ## 一个step一个step执行
         self.init_steps()
         while True:
-            context = self.fetch_one_context()
+            context = self.get_context()
             if context is None:
                 break
             # step 逐一执行
             for step in self.steps:
                 step.execute(context)
-            print(context)
-            input("..")
-            # break
         return 
 
 if __name__ == "__main__":

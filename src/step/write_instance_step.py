@@ -10,6 +10,8 @@ class WriteInstanceStep(Step):
         save_path = conf.get("save_path", "../training_data/")
         suffix = timestamp2str(time.time(), "%Y%m%d")
         self.save_file = "%s/data.bin.%s" %(save_path, suffix)
+        self.cache_size = conf.get("cache_size", 30)
+        self.cache = []
         return 
 
     def pack_instance(self, context):
@@ -38,10 +40,13 @@ class WriteInstanceStep(Step):
         """
           保存instance
         """
-        f = open(self.save_file, "ab") 
-        # 把二进制数据+字节数写到文件中
-        write_file_with_size(f, ins.SerializeToString()) 
-        f.close()
+        self.cache.append(ins)
+        if len(self.cache) >= self.cache_size:
+            # 把二进制数据+字节数写到文件中
+            f = open(self.save_file, "ab") 
+            for item in self.cache:
+                write_file_with_size(f, item.SerializeToString()) 
+            f.close()
         return 
 
     def execute(self, context): 

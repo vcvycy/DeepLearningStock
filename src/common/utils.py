@@ -27,14 +27,17 @@ def write_file_with_size(f, binary):
     return 
 
 def read_file_with_size(f, PBClass = None):
-    byte_num = struct.unpack('Q', f.read(8))[0]
-    print("byte_num : %s" %(byte_num))
-    data = f.read(byte_num)
+    data_size_bin = f.read(8)
+    if len(data_size_bin) < 8:
+        return 0, None
+    data_size = struct.unpack('Q', data_size_bin)[0]
+    print("data_size : %s" %(data_size))
+    data = f.read(data_size)
     if PBClass is not None:
         obj = PBClass()
         obj.ParseFromString(data)
         data = obj
-    return byte_num, data
+    return data_size, data
     
 
 
@@ -47,10 +50,15 @@ def timestamp2str(ts, format = "%Y-%m-%d %H:%M:%S"):
 
 
 if __name__ == "__main__":
-    # from stock_pb2 import *
-    # path = "/Users/bytedance/OneDrive/DeepLearningStock/src/train_data_pb.bin"
-    # f = open(path, "rb")
-    # print(read_file_with_size(f, Instance))
+    from stock_pb2 import *
+    path = "../../training_data/data.bin.20221103"
+    f = open(path, "rb")
+    for i in range(1000):
+        size, data = read_file_with_size(f, Instance)
+        if size == 0:
+            break
+        print('-'* 50 + str(i) + '-'*50)
+        print(data)
 
-    suffix = timestamp2str(time.time(), "%Y%m%d_%H")
-    print(suffix)
+    # suffix = timestamp2str(time.time(), "%Y%m%d_%H")
+    # print(suffix)
