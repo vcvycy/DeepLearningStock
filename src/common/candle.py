@@ -3,17 +3,17 @@ import sys
 sys.path.append("..")
 from common.stock_pb2 import *
 class Candle(): 
-    attrs = [
+    CommonAttr = [
         "time", "open", "high", "low", "close", "amount", "vol", "turnover", "pre_close", "date"
     ]
     def __init__(self):
         super(Candle, self).__init__()
-        for attr in Candle.attrs:
+        for attr in Candle.CommonAttr:
             setattr(self, attr, None) 
         return 
     def __str__(self):
         s = ""
-        for attr in Candle.attrs:
+        for attr in Candle.CommonAttr:
             if getattr(self, attr) is not None:
                 s +="%s: %s, " %(attr, getattr(self, attr))
         return s
@@ -25,12 +25,14 @@ class Candle():
         return self.close / self.pre_close -1
 
 class Kline():
-    def __init__(self, candles = []):
-        self.candles = candles
+    def __init__(self, name="unknown", candles = None):
+        self.name = name
+        self.candles = [] if candles is None else candles
+    
     def add(self, candle):
         self.candles.append(candle)
-
         return 
+    
     def get_rise(self, days = 1):
         """
           获取k线图 days天的涨跌幅
@@ -39,7 +41,6 @@ class Kline():
             days = len(self.candles) - 1
         open = self.candles[days].close
         close = self.candles[0].close
-
         return close/open - 1
     
     def __getitem__(self, idx):
@@ -51,9 +52,14 @@ class Kline():
         return len(self.candles)
 
     def __repr__(self):
-        return str(self.candles)
+        return self.__str__()
     def __str__(self):
-        return str(self.candles)
+        rsp = "[KLine %s]\n    " %(self.name)
+        if len(self.candles) > 10:
+            rsp += str(self.candles[:2]) + "..." + str(self.candles[-2:])
+        else: 
+            rsp += str(self.candles)
+        return rsp
     
 if __name__ == "__main__":
     c = Candle 

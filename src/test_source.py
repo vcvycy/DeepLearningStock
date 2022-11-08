@@ -7,17 +7,10 @@ conf = {
       "label_days":            1     # 至少N天的label数据
 }
 
-# tsrc = TushareSource(conf)
-# import time
-# time.sleep(1)
+tsrc = TushareSource(conf) 
 # print("ctx size: %s" %(tsrc.context_size))
-# while True:
-#     ctx = tsrc.get_context()
-#     if ctx is None:
-#         break
-#     print(ctx)
-
-client = TushareApi.init_client(conf["api_key"])
-print(TushareApi.get_kline_by_ts_code(client, "002241.SZ")[-1])
-print(TushareApi.get_kline_by_ts_code(client, "000001.SZ")[-1])
-# import ipdb;ipdb.set_trace()
+while True:
+    ctx = tsrc.get_context()
+    if ctx is None:
+        break
+    print(ctx) 

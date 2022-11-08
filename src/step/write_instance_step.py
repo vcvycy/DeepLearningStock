@@ -7,9 +7,9 @@ class WriteInstanceStep(Step):
     def __init__(self, conf):
         super(WriteInstanceStep, self).__init__(conf)
         # 要保存的文件
-        save_path = conf.get("save_path", "../training_data/")
-        suffix = timestamp2str(time.time(), "%Y%m%d")
-        self.save_file = "%s/data.bin.%s" %(save_path, suffix)
+        save_path = conf.get("save_path", "../training_data/data.bin")
+        date_suffix = conf.get("date_suffix", "%Y%m%d") 
+        self.save_file = "%s.%s" %(save_path, timestamp2str(time.time(), date_suffix))
         self.cache_size = conf.get("cache_size", 30)
         self.cache = []
         return 

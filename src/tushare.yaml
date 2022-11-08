@@ -6,42 +6,44 @@ source:                 # 从哪些地方获取数据
     path: source.source_tushare 
     class: TushareSource
     args:
-      api_key: e2d615dd1d6a00f48b84eb43f2aa64a413c190b7295a6ab6729df2a5
-      sample_recent_days:    30   # 股票采样, 最近N天
-      sample_min_train_days: 1    # 至少N天数据作为训练数据
+      api_key: 009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f
+      thread_num:            30
+      sample_recent_days:    30   # 每个股票采样多少个样本
+      sample_min_train_days: 30   # 至少N天数据作为训练数据
       label_days:            1    # 至少N天的label数据
 
 # step 顺序执行
 step:
   step_list:
-    - name: raw_feature
-      path: step.feature_step
-      class: FeatureStep
-      args:
-        out_key : "raw_feature"
+    # - name: raw_feature
+    #   path: step.feature_step
+    #   class: FeatureStep
+    #   args:
+    #     out_key : "raw_feature"
     
-    - name: fid_extraction
-      path: step.fid_extraction_step
-      class: FidExtractionStep
-      args: 
-        feature_list : "feature_list.yaml"
-        in_key : "raw_feature" 
-        out_key: "fids" 
+    # - name: fid_extraction
+    #   path: step.fid_extraction_step
+    #   class: FidExtractionStep
+    #   args: 
+    #     feature_list : "feature_list.yaml"
+    #     in_key : "raw_feature" 
+    #     out_key: "fids" 
 
-    - name: label          # 生成label
-      path: step.label_step
-      class: LabelStep
-      args:
-        out_key : label
-        label_confs:
-          - method : next_n_days_high_ratio_method   # 表示接下来days天，最高涨幅
-            conf: 
-              days: 1,3,7,14,30
+    # - name: label          # 生成label
+    #   path: step.label_step
+    #   class: LabelStep
+    #   args:
+    #     out_key : label
+    #     label_confs:
+    #       - method : next_n_days_high_ratio_method   # 表示接下来days天，最高涨幅
+    #         conf: 
+    #           days: 1,3,7,14,30
 
-    - name: write_instance  # 保存训练数据
-      path: step.write_instance_step
-      class: WriteInstanceStep
-      args:
-        save_path  : "../training_data/" 
-        cache_size : 30
+    # - name: write_instance  # 保存训练数据
+    #   path: step.write_instance_step
+    #   class: WriteInstanceStep
+    #   args:
+    #     save_path  : "../training_data/data.bin"  # 保存的文件 
+    #     date_suffix : "%Y%m%d"                 
+    #     cache_size : 30
           

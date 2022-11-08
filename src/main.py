@@ -50,7 +50,7 @@ class Engine():
 
     def get_context(self):
         # 互斥锁
-        self.source_mutex.acquire()
+        # self.source_mutex.acquire()
         # 整个队列用完了
         if self.source_cursor >= len(self.sources):
             return
@@ -61,7 +61,7 @@ class Engine():
             self.source_cursor += 1
             return self.get_context()
         # 去锁
-        self.source_mutex.release()
+        # self.source_mutex.release()
         return context
 
     def init_steps(self):
@@ -69,6 +69,8 @@ class Engine():
           获取所有的step
         """
         step_list = self.conf["step"]["step_list"]
+        if step_list is None:
+            step_list = []
         self.steps = []
         self.name2step = {}
         for step in step_list:
@@ -87,13 +89,18 @@ class Engine():
         self.init_sources()
         ## 一个step一个step执行
         self.init_steps()
+        context_num = 0
         while True:
+            context_num += 1
             context = self.get_context()
             if context is None:
                 break
             # step 逐一执行
             for step in self.steps:
                 step.execute(context)
+            if context_num % 20 == 0:
+                logging.error("[main progress] context_num: %s %s" %(context_num, context.id))
+        logging.error("[main end] 总context数: %s" %(context_num))
         return 
 
 if __name__ == "__main__":
