@@ -13,9 +13,8 @@ class FidExtractionStep(Step):
     def get_fids(self, context):
         fids = []
         return []
-    def execute(self, context):
-        feature = {
-        }  
+    def execute(self, context): 
+        feature = {}  # feature保存 feature_name -> (slot, fid, raw_feature)映射  
         for fc in self.feature_list.get("feature_columns"):
             # 获取参数 
             depends = fc.get("depends").split(",")
@@ -26,7 +25,7 @@ class FidExtractionStep(Step):
             # 执行函数 
             raw_features = [context.get("%s.%s" %(self.in_key, d)) for d in depends] 
             # 特征写到fids
-            key = "%s_slot_%s" %(fc.get("name"), slot)
-            feature[key] = method(raw_features, args, slot)
-        context.set(self.out_key, feature)
+            name = fc.get("name")  
+            feature[name] = slot, method(raw_features, args, slot), raw_features
+        context.set(self.out_key, feature) 
         return 

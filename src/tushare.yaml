@@ -51,5 +51,5 @@ step:
         save_path  : "../training_data/data.bin"  # 保存的文件 
         date_suffix : "%Y%m%d"                 
         cache_size : 30    # N个instance写一次文件
-        write_raw_feature: # 是否写raw_feature, 用于Debug
+        write_raw_feature: True # 是否写raw_feature, 用于Debug
           

@@ -13,8 +13,9 @@ class WriteInstanceStep(Step):
         self.save_file = "%s.%s" %(save_path, timestamp2str(time.time(), date_suffix))
         self.f = open(self.save_file, "ab") 
         self.cache_size = conf.get("cache_size", 30)
-        self.write_raw_feature = conf.get("write_raw_feature", False)
         self.cache = Queue()
+        # 
+        self.write_raw_feature = conf.get("write_raw_feature", False)
         return 
     
     def __del__(self):
@@ -31,11 +32,15 @@ class WriteInstanceStep(Step):
         ins.ts_code = context.get("source.ts_code")
         ins.date = context.get("source.train_date")
         # fid
-        key2fids = context.get("fids")
-        for key in key2fids:
+        feature2data = context.get("fids")
+        for key in feature2data:
             fc = FeatureColumn()
-            fc.name = key 
-            fc.fids.extend(key2fids[key])
+            slot, fids, raw_feature = feature2data[key]
+            fc.name = key
+            fc.slot = slot 
+            fc.fids.extend(fids)
+            if self.write_raw_feature:
+                fc.raw_feature.extend([str(item) for item in raw_feature])
             ins.feature.extend([fc])
         # label
 

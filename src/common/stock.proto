@@ -13,16 +13,16 @@ enum Currency {
 }
 message FeatureColumn {
     string name = 1;
-    repeated uint64 fids = 2;
-    repeated string fids_raw_feature = 3;   // fids对应的raw_feature 用于debug
+    uint64 slot = 2;
+    repeated uint64 fids = 3;
+    repeated string raw_feature = 4;   // debug: fids对应的raw_feature
 }
 message Instance {
     repeated FeatureColumn feature  = 1;
     map<string, float> label = 2;
-    string raw_feature_json  = 3;
-    string name              = 4;         
-    string ts_code           = 5;
-    string date              = 6;
+    string name              = 3;         
+    string ts_code           = 4;
+    string date              = 5;
 }
 // message CandlePB {      // k线图一个蜡烛
 //     int64 time  = 1;  // 开始时间
