@@ -1,0 +1,9 @@
+
+train_files:
+  - "../training_data/data.bin.20221108"
+
+label:
+  method : binarize
+  args: 
+    key : next_3d_close_price
+    threshold : 0.03   #

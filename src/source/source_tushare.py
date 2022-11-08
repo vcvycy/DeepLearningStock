@@ -8,9 +8,22 @@ from common.candle import Candle, Kline
 import logging
 from common.utils import *
 import random
+import time
 
+def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切断)
+    def wrapper(*args):
+        retry = 3
+        for i in range(retry):
+            try:
+                return fun(*args)
+            except Exception as e:
+                logging.error("[TushareApi-%s] exception: %s, retry: %s/%s" %(fun.__name__, e, i, retry))
+                time.sleep(1)
+        raise Exception("[TushareApi] unknown failed")
+    return wrapper
 # Tushare的api封装
 class TushareApi:
+
     @staticmethod
     def init_client(api_key):
         return ts.pro_api(api_key)
@@ -39,6 +52,7 @@ class TushareApi:
         return df
     
     @staticmethod
+    @TushareDecorator
     def get_kline_by_ts_code(client, ts_code):
         # 从tushare获取k线图
         kline_df = client.daily(**{

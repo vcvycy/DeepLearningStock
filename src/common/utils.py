@@ -1,6 +1,14 @@
 #coding=utf8
 import time
 import struct
+# 浮点数保留k位小数
+def float_trun(f, k = 3):
+    try:
+        f = float(f)
+        return 1.0 * int(f * 10 ** k) / (10 ** k) 
+    except:
+        return f
+
 def pretty_json(data, prefix = ""):
     def show(data, prefix= ""):
         s = ""
@@ -31,7 +39,6 @@ def read_file_with_size(f, PBClass = None):
     if len(data_size_bin) < 8:
         return 0, None
     data_size = struct.unpack('Q', data_size_bin)[0]
-    print("data_size : %s" %(data_size))
     data = f.read(data_size)
     if PBClass is not None:
         obj = PBClass()

@@ -16,6 +16,7 @@ class BaseMethod():
         return single_feature
 
     def __call__(self, raw_features, conf, slot): 
+        assert slot > 0
         fids = []
         # 原始特征得到int64, 再和slot拼接
         if not isinstance(raw_features, list):

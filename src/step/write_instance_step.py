@@ -11,7 +11,7 @@ class WriteInstanceStep(Step):
         save_path = conf.get("save_path", "../training_data/data.bin")
         date_suffix = conf.get("date_suffix", "%Y%m%d") 
         self.save_file = "%s.%s" %(save_path, timestamp2str(time.time(), date_suffix))
-        self.f = open(self.save_file, "ab") 
+        self.f = open(self.save_file, "wb") 
         self.cache_size = conf.get("cache_size", 30)
         self.cache = Queue()
         # 
@@ -43,7 +43,9 @@ class WriteInstanceStep(Step):
                 fc.raw_feature.extend([str(item) for item in raw_feature])
             ins.feature.extend([fc])
         # label
-
+        labels = context.get("label")
+        for k in labels:
+            ins.label[k] = labels[k]
         # 存到context， debug
         context.set("pack_instance", ins)
         return ins

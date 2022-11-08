@@ -21,7 +21,7 @@ class FidExtractionStep(Step):
             args = fc.get("args")
             slot = fc.get("slot")
             # 获取要执行的函数
-            method = getattr(feature_hash, fc.get("method"))()
+            method = getattr(feature_hash, fc.get("method", "BaseMethod"))()
             # 执行函数 
             raw_features = [context.get("%s.%s" %(self.in_key, d)) for d in depends] 
             # 特征写到fids

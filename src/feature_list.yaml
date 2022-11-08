@@ -15,5 +15,11 @@ feature_columns:
       start: 0
       step: 0.005
 
-  # - name : date
-  #   depends
+  - name : date
+    depends :  time.date
+    slot : 3
+  
+  - name : week
+    depends : time.week
+    slot : 4
+  

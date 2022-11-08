@@ -7,7 +7,7 @@ if __name__ == "__main__":
         size, data = read_file_with_size(f, Instance)
         if size == 0:
             break
-        print('-'* 50 + str(i) + '-'*50)
+        print('-'* 50 + str(i+1) + '-'*50)
         print(data)
 
     # suffix = timestamp2str(time.time(), "%Y%m%d_%H")
