@@ -32,22 +32,26 @@ class Source:
             except:
                 # 取数据超时且在取数前, 所有线程都跑完了, 则返回None
                 if all_finish:
-                    return None
-    def execute(self):
-        # 入口函数: 初始化
-        pass 
+                    return None 
+    
+    def get_progress(self):
+        # 当前source的进度
+        raise Exception("need override")
 
 class MultiThreadSource(Source):  # 多线程source
     def __init__(self, conf):
         super(MultiThreadSource, self).__init__(conf)
-        thread_num = conf.get("thread_num", 30)
-        self.thread_pool = ThreadPoolExecutor(max_workers=thread_num)
+        max_workers = conf.get("max_workers", 30)
+        self.max_thread = conf.get("max_thread", 99999)
+        self.thread_pool = ThreadPoolExecutor(max_workers=max_workers)
         self.futures = []
         return 
     
     # 新增一个线程，取数据，写到context_queue
     def add_thread(self, func, *args, **kwargs):
         # 线程池初始化  
+        if len(self.futures) >= self.max_thread :
+            return 
         future = self.thread_pool.submit(func, self, *args, **kwargs)
         self.futures.append(future)  
 
@@ -65,7 +69,11 @@ class MultiThreadSource(Source):  # 多线程source
                 return False
         return True
 
-    
+    def get_progress(self):
+        all_threads = len(self.futures)
+        finished_thread = self.get_thread_finish_num()
+        return "进程完成数: %s/%s" %(finished_thread, all_threads)
+
 if __name__ == "__main__":
     import time
     def add(queue, x, y):

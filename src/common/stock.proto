@@ -14,6 +14,7 @@ enum Currency {
 message FeatureColumn {
     string name = 1;
     repeated uint64 fids = 2;
+    repeated string fids_raw_feature = 3;   // fids对应的raw_feature 用于debug
 }
 message Instance {
     repeated FeatureColumn feature  = 1;

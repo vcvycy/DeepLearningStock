@@ -3,6 +3,7 @@ from step.step import Step
 from common.stock_pb2 import *
 import time
 import struct
+from queue import Queue
 class WriteInstanceStep(Step):
     def __init__(self, conf):
         super(WriteInstanceStep, self).__init__(conf)
@@ -10,10 +11,16 @@ class WriteInstanceStep(Step):
         save_path = conf.get("save_path", "../training_data/data.bin")
         date_suffix = conf.get("date_suffix", "%Y%m%d") 
         self.save_file = "%s.%s" %(save_path, timestamp2str(time.time(), date_suffix))
+        self.f = open(self.save_file, "ab") 
         self.cache_size = conf.get("cache_size", 30)
-        self.cache = []
+        self.write_raw_feature = conf.get("write_raw_feature", False)
+        self.cache = Queue()
         return 
-
+    
+    def __del__(self):
+        self.write_instance()
+        return 
+    
     def pack_instance(self, context):
         """
           组装训练数据
@@ -36,20 +43,24 @@ class WriteInstanceStep(Step):
         context.set("pack_instance", ins)
         return ins
     
-    def save_instance(self, ins):
+    def write_instance(self):
+        # 把二进制数据+字节数写到文件中
+        while not self.cache.empty():
+            item = self.cache.get()
+            write_file_with_size(self.f, item.SerializeToString()) 
+        return 
+
+    def add_instance(self, ins):
         """
-          保存instance
+          instance加入cache中
         """
-        self.cache.append(ins)
-        if len(self.cache) >= self.cache_size:
-            # 把二进制数据+字节数写到文件中
-            f = open(self.save_file, "ab") 
-            for item in self.cache:
-                write_file_with_size(f, item.SerializeToString()) 
-            f.close()
+        self.cache.put(ins)
         return 
 
     def execute(self, context): 
         ins = self.pack_instance(context)
-        self.save_instance(ins)
+        self.add_instance(ins)
+        # cache数足够了，则写文件
+        if self.cache.qsize() >= self.cache_size:
+            self.write_instance()
         return 

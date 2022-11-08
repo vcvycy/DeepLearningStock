@@ -91,15 +91,16 @@ class Engine():
         self.init_steps()
         context_num = 0
         while True:
-            context_num += 1
             context = self.get_context()
             if context is None:
                 break
             # step 逐一执行
             for step in self.steps:
                 step.execute(context)
+            context_num += 1
             if context_num % 20 == 0:
-                logging.error("[main progress] context_num: %s %s" %(context_num, context.id))
+                logging.error("[main progress] context_num: %s %s cur source: %s" %(context_num, 
+                                context.id, self.sources[self.source_cursor].get_progress()))
         logging.error("[main end] 总context数: %s" %(context_num))
         return 
 
