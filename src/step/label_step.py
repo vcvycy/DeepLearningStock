@@ -32,7 +32,7 @@ class LabelStep(Step):
             labels["next_%sd_close_price" %(d)] = float_trun(close_price/open_price - 1.0)
         return labels
 
-    def execute(self, context):
+    def _execute(self, context):
         labels = {}
         for label_conf in self.label_confs:
             method = label_conf["method"]

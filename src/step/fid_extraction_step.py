@@ -9,11 +9,7 @@ class FidExtractionStep(Step):
         self.feature_list = yaml.safe_load(open(conf.get("feature_list"), 'r') .read())
         return 
 
-
-    def get_fids(self, context):
-        fids = []
-        return []
-    def execute(self, context): 
+    def _execute(self, context): 
         feature = {}  # feature保存 feature_name -> (slot, fid, raw_feature)映射  
         for fc in self.feature_list.get("feature_columns"):
             # 获取参数 

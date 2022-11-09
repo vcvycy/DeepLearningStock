@@ -32,7 +32,7 @@ class FeatureStep(Step):
             "rise_7d" : kline.get_rise(7)
         }
         return feature
-    def execute(self, context):
+    def _execute(self, context):
         """
           原始特征抽取
         """

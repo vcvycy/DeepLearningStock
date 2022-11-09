@@ -4,6 +4,8 @@ from common.stock_pb2 import *
 import time
 import struct
 from queue import Queue
+import threading
+
 class WriteInstanceStep(Step):
     def __init__(self, conf):
         super(WriteInstanceStep, self).__init__(conf)
@@ -15,6 +17,7 @@ class WriteInstanceStep(Step):
         self.cache_size = conf.get("cache_size", 30)
         self.cache = Queue()
         # 
+        self.write_mutex = threading.Lock()
         self.write_raw_feature = conf.get("write_raw_feature", False)
         return 
     
@@ -51,10 +54,15 @@ class WriteInstanceStep(Step):
         return ins
     
     def write_instance(self):
-        # 把二进制数据+字节数写到文件中
-        while not self.cache.empty():
+        self.write_mutex.acquire()
+        # 把二进制数据+字节数写到文件中: 写到队列为空或者写cache个
+        write_cnt = self.cache_size
+        print("wriet_instance: size: %s" %(self.cache.qsize()))
+        while not self.cache.empty() and write_cnt > 0:
             item = self.cache.get()
             write_file_with_size(self.f, item.SerializeToString()) 
+            write_cnt -= 1
+        self.write_mutex.release()
         return 
 
     def add_instance(self, ins):
@@ -64,7 +72,7 @@ class WriteInstanceStep(Step):
         self.cache.put(ins)
         return 
 
-    def execute(self, context): 
+    def _execute(self, context): 
         ins = self.pack_instance(context)
         self.add_instance(ins)
         # cache数足够了，则写文件

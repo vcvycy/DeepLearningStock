@@ -133,7 +133,7 @@ class TushareSource(MultiThreadSource):
                 ctx_num += 1
         except Exception as e:
             print("exp: %s" %(e))
-            exit(0)
+        self.thread_finish_num +=1 
         return ctx_num
 
     def start_multi_thread(self):
