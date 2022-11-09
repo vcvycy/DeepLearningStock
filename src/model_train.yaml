@@ -2,8 +2,21 @@
 train_files:
   - "../training_data/data.bin.20221108"
 
-label:
-  method : binarize
-  args: 
-    key : next_3d_close_price
-    threshold : 0.03   #
+model_data:
+  label:
+    method : binarize
+    args: 
+      key : next_3d_close_price
+      threshold : 0.03   #
+
+
+model: 
+  loss_type: cross_entropy
+  l2_lambda : 0.0001
+  optimizer : 
+    type: MomentumOptimizer
+    learning_rate: 0.001
+    momentum : 0.9       # 动量
+  mini_batch:
+    batch_size: 2
+    epoch : 1000

@@ -99,7 +99,7 @@ class Engine():
                 step.execute(context)
             context_num += 1
             if context_num % 20 == 0:
-                print(context)
+                # print(context)
                 logging.error("[main progress] context_num: %s %s cur source: %s" %(context_num, 
                                 context.id, self.sources[self.source_cursor].get_progress()))
         logging.error("[main end] 总context数: %s" %(context_num))

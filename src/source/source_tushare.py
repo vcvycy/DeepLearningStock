@@ -14,11 +14,12 @@ def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切
     def wrapper(*args):
         retry = 3
         for i in range(retry):
+            if i > 0:
+                time.sleep(20)
             try:
                 return fun(*args)
             except Exception as e:
-                logging.error("[TushareApi-%s] exception: %s, retry: %s/%s" %(fun.__name__, e, i, retry))
-                time.sleep(1)
+                logging.error("[TushareApi-%s] exception: %s, retry: %s/%s, args: %s" %(fun.__name__, e, i+1, retry, args))
         raise Exception("[TushareApi] unknown failed")
     return wrapper
 # Tushare的api封装
