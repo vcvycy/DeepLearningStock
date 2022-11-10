@@ -1,13 +1,15 @@
+log_file : "model_train.log"
 
 train_files:
-  - "../training_data/data.bin.20221108"
-
+  # - "../training_data/data.bin.20221109"
+  - "../training_data/data.bin.20221109_1631"
 model_data:
   label:
     method : binarize
     args: 
-      key : next_3d_close_price
-      threshold : 0.03   #
+      key : next_1d_close_price
+      threshold : 0.01   #
+  min_fid_occurrence : 14    # 每个fid最少出现几次
 
 
 model: 
@@ -18,5 +20,5 @@ model:
     learning_rate: 0.001
     momentum : 0.9       # 动量
   mini_batch:
-    batch_size: 2
-    epoch : 1000
+    batch_size: 50
+    epoch : 100
