@@ -3,22 +3,34 @@ log_file : "model_train.log"
 train_files:
   # - "../training_data/data.bin.20221109"
   - "../training_data/data.bin.20221109_1631"
-model_data:
+
+#预处理instance: 处理label, 过滤fid等
+train_data:
   label:
     method : binarize
     args: 
       key : next_1d_close_price
-      threshold : 0.01   #
-  min_fid_occurrence : 14    # 每个fid最少出现几次
+      threshold : 0.03   #
+  min_fid_occurrence : 50    # 每个fid最少出现几次
+  debug:                 # debug 函数
+    fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些
+      # - 39738018767255390
+    slot_whitelist: 
+      - 3
+    
 
 
 model: 
   loss_type: cross_entropy
   l2_lambda : 0.0001
+  global_bias : False
   optimizer : 
-    type: MomentumOptimizer
-    learning_rate: 0.001
-    momentum : 0.9       # 动量
+    # type: AdagradOptimizer
+    # type: MomentumOptimizer
+    # momentum : 0.9       # 动量
+
+    type: GradientDescentOptimizer  # 效果最好
+    learning_rate: 0.0001
   mini_batch:
-    batch_size: 50
-    epoch : 100
+    batch_size: 1000
+    epoch : 10000

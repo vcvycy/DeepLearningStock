@@ -123,15 +123,10 @@ class Engine():
             futures.append(future)
         for f in futures:
             print("线程result: %s" %(f.result()))
-        
-        # 分source耗时:
-        for source in self.sources:
-            print("[source-%s] 耗时: %.1f秒" %(type(source).__name__, source.time_cost))
-        # 分step耗时:
-        for step in self.steps:
-            print("[step-%s] 耗时:%.1f秒" %(type(step).__name__, step.time_cost))
+        self.stat()
         latency = time.time() - time_start
         logging.error("[main end] 总context数: %s, 耗时: %.1fs" %(self.context_num, latency))
+        
         return 
 
     def run(self):
@@ -141,8 +136,7 @@ class Engine():
         ## 初始化source
         self.init_sources()
         ## 一个step一个step执行
-        self.init_steps()
-        context_num = 0
+        self.init_steps() 
         time_start = time.time()
         while True:
             context = self.get_context()
@@ -151,16 +145,22 @@ class Engine():
             # step 逐一执行
             for step in self.steps:
                 step.execute(context)
-            context_num += 1
-            if context_num % 100 == 0:
+            self.context_num += 1
+            if self.context_num % 100 == 0:
                 # print(context)
-                logging.error("[main progress] context_num: %s %s cur source: %s" %(context_num, 
-                                context.id, self.sources[self.source_cursor].get_progress()))
+                logging.error("[main progress] context_num: %s %s cur source: %s" %(self.context_num, 
+                                context.id, self.sources[self.source_cursor].get_progress())) 
+        self.stat()
+        latency = time.time() - time_start
+        logging.error("[main end] 总context数: %s, 耗时: %.1fs" %(self.context_num, latency))
+        return 
+    def stat(self):
+        # 分source耗时:
+        for source in self.sources:
+            print("[source-%s] 耗时: %.1f秒" %(type(source).__name__, source.time_cost))
         # 分step耗时:
         for step in self.steps:
-            print("[step-%s] 耗时:%.1f秒" %(step.__name__, step.time_cost))
-        latency = time.time() - time_start
-        logging.error("[main end] 总context数: %s, 耗时: %.1fs" %(context_num, latency))
+            print("[step-%s] 耗时:%.1f秒" %(type(step).__name__, step.time_cost))
         return 
 
 if __name__ == "__main__":
@@ -170,4 +170,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     engine = Engine(args.config)
     engine.multithread_run()
-    # engine.run()
+    # engine.run() 

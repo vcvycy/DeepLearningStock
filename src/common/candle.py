@@ -7,7 +7,7 @@ class Candle():
         "time", "open", "high", "low", "close", "amount", "vol", "turnover", "pre_close", "date"
     ]
     def __init__(self):
-        super(Candle, self).__init__()
+        # super(Candle, self).__init__()
         for attr in Candle.CommonAttr:
             setattr(self, attr, None) 
         return 

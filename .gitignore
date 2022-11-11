@@ -2,3 +2,5 @@
 *.pyc
 *pycache*
 **tmp**
+./training_data/*
+*.log
