@@ -1,40 +1,56 @@
 log_file : "model_train.log"
 
 train_files:
-  # - "../training_data/data.bin.20221109"
-  - "../training_data/data.bin.20221115_1408"
-
+  # 2000个股票, 365天数据
+  # - "../training_data/data.bin.20221115_2029"
+  # 测试
+  - "../training_data/data.bin.20221115_2026"
 #预处理instance: 处理label, 过滤fid等
 train_data:
   label:
     method : binarize
     args: 
-      key : next_1d_close_price
+      key : next_7d_close_price
       threshold : 0.0   #
   min_fid_occurrence : 0    # 每个fid最少出现几次
   debug:                 # debug 函数
     fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些
-      # - 61958631964249053
-      # - 57500903399011784
-      # - 54396408775485478
-      # - 71970023882659165
+      # - 1444932513133819623
+      # - 1444015990897181305
+      # - 1450672333743350316
+      # - 1453955548291422233
     slot_whitelist: 
-      - 101
-      # - 1
+      - 80
+      # - 507
+      # - 82
+      # - 83
     
 
 
 model: 
   loss_type: cross_entropy
-  l2_lambda : 0        # 如果fid出现多次，则只计算一次l2_loss
-  global_bias : True
+  # l2_lambda : 0        # 如果fid出现多次，则只计算一次l2_loss
+  # global_bias : True
   optimizer : 
     # type: AdagradOptimizer
     # type: MomentumOptimizer
     # momentum : 0.9       # 动量
 
     type: GradientDescentOptimizer  # 效果最好
-    learning_rate: 0.0001
+    learning_rate: 0.001
   mini_batch:
     batch_size: 1000
     epoch : 5000
+
+# 调参经验： 
+#  1. learning rate 
+#      1e-2: 2.5太高了，直接学飞
+#      1e-3: 0.037
+#      1e-4: 0.085 会导致稀疏特征学得慢
+#  2. l2_lambda (看着没什么用)
+#      0 :    diff = 0.025
+#      1e-3 : diff = 0.035
+#      1e-4 : diff = 0.032
+#      1e-5 : diff = 0.042
+#  3. 有无global_bias diff 0.03 vs 0.02
+#  4. adagrad: 学习率要调整为0.01, 但是扔没有明显收益

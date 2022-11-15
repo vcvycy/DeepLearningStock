@@ -41,6 +41,7 @@ class TrainData():
         # 初始化每个fid的出现次数
         self.__init_fid2occu()
         # 给每个fid一个index，用于找embedding
+        self.fid2index = {}   # 给每个fid一个index, 从0开始
         self.__init_fid2index_ins_filter()
         # 初始化训练数据
         self.__init_train_items()
@@ -50,7 +51,7 @@ class TrainData():
     def __debug(self):
         # if len(self.fid_whitelist) == 0 and len(self.slot_whitelist)== 0:
         #     return 
-        print("whitelist: %s %s" %(self.fid_whitelist, self.slot_whitelist))
+        self.fid2avg_label = {} 
         fid2label = {}
         for train_item in self.train_items: 
             label = train_item.label  
@@ -63,10 +64,12 @@ class TrainData():
             # input("fid: %s slot: %s  ret: %s" %(fid, fid>>54, fid in self.fid_whitelist or fid >> 54 in self.slot_whitelist))
             if self._is_fid_in_whitelist(fid):
                 labels = fid2label[fid] 
-                logging.info("[TrainData-Debug] fid(slot: %3d): %s(raw_feature: %20s), label数量: %d, label_mean: %.3f", fid,
-                                fid>>54, self.fid2feature[fid], len(labels), np.mean(labels))
+                avg_label = np.mean(labels) if len(labels) > 0 else 0
+                self.fid2avg_label[fid] = avg_label
+                raw_fea, extract_fea = self.fid2feature[fid]
+                logging.info("[TrainData-Debug] (slot: %3d): %s(raw: %20s, feature: %10s) , ins_num: %d, label_mean: %.3f", fid>>54,
+                                fid, raw_fea, extract_fea, len(labels), avg_label)
         logging.info("[TrainData-Debug] 所有可训练的slot: %s(%s)" %(len(self.all_slots), self.all_slots))
-        input("[Debug End]press any key to continue...")
         return 
 
     def _is_fid_in_whitelist(self, fid):
@@ -135,11 +138,14 @@ class TrainData():
         return not self._is_fid_in_whitelist(fid)
 
     def __init_fid2index_ins_filter(self):
+        """
+           过滤instance: 即如果当前instance所有fid都被过滤掉，则整个instance过滤掉
+        """
         self.fid2index = {}  # 每个fid对应一个Index，通过Index找embedding 
         self.index2fid = {}
         self.fid2feature = {}
         index = 0
-        fid_filtered_num = 0
+        fid_filtered_set = set([])
 
         self.valid_instances = []
         for ins in self.instances: 
@@ -150,20 +156,21 @@ class TrainData():
                 for i in range(len(fc.fids)):
                     fid = fc.fids[i]
                     if self.__is_fid_neeed_filter(fid):
-                        fid_filtered_num +=1
+                        fid_filtered_set.add(fid)
                     else:
                         exist_valid_fid = True
-                        raw_feature = str(fc.raw_feature)
+                        raw_feature = ",".join(fc.raw_feature)
+                        extracted_features = ",".join(fc.extracted_features)
                         if fid not in self.fid2index:
                             self.fid2index[fid] = index
                             self.index2fid[index] = fid
-                            self.fid2feature[fid] = raw_feature 
+                            self.fid2feature[fid] = raw_feature, extracted_features
                             index += 1  
             if exist_valid_fid:
                 self.valid_instances.append(ins)
         logging.info("总Instance数量: %s 过滤后的instance数(无fid):%s" %(len(self.instances), len(self.valid_instances))) 
         assert len(self.valid_instances) > 0
-        logging.info("FID: 过滤后fid数: %s; fid出现次数至少:%s次，过滤FID数量: %s" %(index, self.conf.get("min_fid_occurrence", 0), fid_filtered_num))
+        logging.info("FID: 过滤后fid数: %s; fid出现次数至少:%s次，过滤FID数量: %s" %(index, self.conf.get("min_fid_occurrence", 0), len(fid_filtered_set)))
         return 
     
     def get_fid_num(self):

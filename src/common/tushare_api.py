@@ -83,4 +83,7 @@ if __name__ == "__main__":
     kline = TushareApi.get_kline_by_ts_code(client, "000001.SZ")
     print(kline)
     # kline.draw()
-    print(kline.reduce("high", 10111, "ma"))
+    print(kline.reduce("high", 360, "max"))
+    for i in range(360):
+        c = kline[i]
+        print("%s %s" %(c.date, c.high))

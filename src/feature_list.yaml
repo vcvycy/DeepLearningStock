@@ -5,7 +5,7 @@ feature_columns:
   - name : rise_1d         # 最近3天涨跌
     depends : recent_rise.1d
     method : LinearDiscrete 
-    args:    # 线性分桶离散化
+    args:   
       start: 0
       step: 0.04
       min: -0.2
@@ -14,7 +14,7 @@ feature_columns:
   - name : rise_3d         # 最近3天涨跌
     depends : recent_rise.3d
     method : LinearDiscrete 
-    args:    # 线性分桶离散化
+    args:   
       start: 0
       step: 0.05
       min: -0.3
@@ -23,7 +23,7 @@ feature_columns:
   - name : rise_7d         # 最近N天涨跌
     depends : recent_rise.7d
     method : LinearDiscrete 
-    args:    # 线性分桶离散化
+    args:   
       start: 0
       step: 0.10
       min: -0.7
@@ -32,7 +32,7 @@ feature_columns:
   - name : rise_30d         # 最近N天涨跌
     depends : recent_rise.30d
     method : LinearDiscrete 
-    args:    # 线性分桶离散化
+    args:   
       start: 0
       step: 0.20
       min: -0.9
@@ -41,7 +41,7 @@ feature_columns:
   - name : rise_180d         # 最近N天涨跌
     depends : recent_rise.180d
     method : LinearDiscrete 
-    args:    # 线性分桶离散化
+    args:   
       start: 0
       step: 0.20
       min: -0.9
@@ -53,19 +53,47 @@ feature_columns:
   - name : week
     depends : time.week
   
+
+  # 成交额相关: slot 80~100
+  - name :   last_1d_ath       # 过去1天的最高点，是往前多少天的最高点(16天以下合并)
+    depends : ath.1d
+    slot : 80
+    method : LogDiscrete 
+    args:   
+      base: 2
+
+  - name :   last_3d_ath       # 过去1天的最高点，是往前多少天的最高点
+    depends : ath.3d
+    slot : 81
+    method : LogDiscrete 
+    args:   
+      base: 2
+  - name :   last_7d_ath       # 过去1天的最高点，是往前多少天的最高点
+    depends : ath.7d
+    slot : 82
+    method : LogDiscrete 
+    args:   
+      base: 2
+  - name :   last_14d_ath       # 过去1天的最高点，是往前多少天的最高点
+    depends : ath.14d
+    slot : 83
+    method : LogDiscrete 
+    args:   
+      base: 2
+
   # 成交额相关: slot 100~130
   - name : amount_360d         # 最近360天平均成交额
     depends : amount.360d
     slot : 100
     method : LogDiscrete 
-    args:    # 线性分桶离散化
+    args:   
       base: 2
 
   - name : amount_change_1d         # N天内成交额变化
     depends : amount.1d, amount.360d
     slot : 101
     method : ChangeRateDiscrete 
-    args:    # 线性分桶离散化
+    args:   
       step: 0.4                    
       max : 3
 
@@ -73,7 +101,7 @@ feature_columns:
     depends : amount.3d, amount.360d
     slot : 102
     method : ChangeRateDiscrete 
-    args:    # 线性分桶离散化
+    args:   
       step: 0.4                    
       max : 3
 
@@ -81,7 +109,7 @@ feature_columns:
     depends : amount.7d, amount.360d
     slot : 103
     method : ChangeRateDiscrete 
-    args:    # 线性分桶离散化
+    args:   
       step: 0.4                    
       max : 3
 
@@ -89,7 +117,14 @@ feature_columns:
     depends : amount.30d, amount.360d
     slot : 104
     method : ChangeRateDiscrete 
-    args:    # 线性分桶离散化
+    args:   
       step: 0.2                    
       max : 3
 
+  # 价格相关 131 ~ 180
+  - name : fibonacci_7d         # 过去7天平均价格，在1年内的位置
+    depends : price.close_avg_7d, price.low_360d, price.high_360d
+    slot : 131
+    method : PositionDiscrete 
+    args:   
+      step: 0.2

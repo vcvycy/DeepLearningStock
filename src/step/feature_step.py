@@ -48,6 +48,29 @@ class FeatureStep(Step):
             "%sd" %(d) : kline.reduce("amount", d, "ma") for d in [1, 3, 7, 14, 30, 360]
         }
         return feature
+    
+    def get_all_time_high_feature(self, context):
+        # 突破了N天的新高
+        kline = context.get("source.kline")   
+        feature = {}
+        for d in [1, 3, 7, 14]:           
+            # 最近d天的最高价格，是过去多少天的最高价格
+            high_nd = kline.reduce("high", d, "max")
+            for i in range(d, len(kline)):
+                if kline[i].high > high_nd:
+                    feature["%dd" %(d)] = max(i -d +1, 16)        # 过去
+                    break 
+        return feature
+    
+    def get_price_feature(self, context):
+        # 价格reduce
+        kline = context.get("source.kline")  
+        feature = {
+            "high_360d" : kline.reduce("high", 360, "max"),
+            "low_360d" : kline.reduce("low", 360, "min"),
+            "close_avg_7d" : kline.reduce("close", 7, "ma")
+        }
+        return feature
     def _execute(self, context):
         """
           原始特征抽取
@@ -56,7 +79,9 @@ class FeatureStep(Step):
             "time" : self.get_time_feature(context),
             "recent_rise" : self.get_recent_rise_feature(context),
             "vol" : self.get_vol_related_feature(context),
-            "amount" : self.get_amount_related_feature(context)
+            "amount" : self.get_amount_related_feature(context),
+            "ath" : self.get_all_time_high_feature(context),
+            "price" : self.get_price_feature(context)
         } 
         context.set(self.out_key, feature)
         return 

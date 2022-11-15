@@ -6,6 +6,7 @@ import yaml
 import random
 import tensorflow as tf
 import logging
+import math
 import numpy as np
 from model_train_data import *
 
@@ -15,7 +16,21 @@ class Model():
         self.train_data = train_data
         self.fid_num = train_data.get_fid_num()
         self.losses = []
-        return 
+    #     self.init_fid2index()
+    #     return 
+    # def init_fid2index(self):
+    #     """
+    #       给每个fid一个index
+    #     """
+    #     cur_index = 0
+    #     self.fid2index = {}
+    #     for train_item in self.train_data.train_items:
+    #         for fid in train_item.fids:
+    #             if fid not in self.fid2index:
+    #                 self.fid2index[fid] = cur_index
+    #                 cur_index += 1
+    #     return 
+
     def _get_optimizer(self):
         # optimizer
         op_conf = self.conf.get("optimizer")
@@ -85,8 +100,9 @@ class LRModel(Model):
         bias_input = bias_fid_gate * self.sparse_bias                                 # 乘以开关
         
         # L2 loss
-        l2_lambda = self.conf.get("l2_lambda")
+        l2_lambda = self.conf.get("l2_lambda", 0)
         if l2_lambda > 0:
+            self.losses.append(l2_lambda * tf.reduce_sum(tf.square(self.global_bias)))
             # 每个fid只计算一次l2 lambda
             b = tf.reduce_sum(bias_input, axis=0)
             c = tf.where(tf.greater(b, 0), tf.ones_like(b), tf.zeros_like(b))
@@ -137,7 +153,7 @@ class LRModel(Model):
         self.optimizer = self._get_optimizer()
 
         # 训练参数
-        self.train_data = train_data
+        train_data = self.train_data
         batch_size = self.conf.get("mini_batch").get("batch_size", 50) 
         epoch = self.conf.get("mini_batch").get("epoch", 1)         # 训练多少次
         # 开始训练
@@ -164,13 +180,27 @@ class LRModel(Model):
         logging.info("bias_value(原始值): %s ; global_bias: %s" %(bias_value, global_bias_val))
         features = []
         for fid in train_data.fid2index:
-            feature = train_data.fid2feature[fid]
+            raw, feature = train_data.fid2feature[fid]
             features.append((fid>>54, fid, train_data.fid2index[fid], feature, train_data.fid2occur[fid])) 
 
+        bias_label_diff = 0
         features.sort(key= lambda x : "%s-%s" %(x[0], x[3])) # 按slot排序 
-        for slot, fid, index, feature, occur in features:  
-            logging.info("[slot: %s %s] [次数: %5s] [bias_with_g_bias: %.3f]  (raw_feature: %s)" %(slot, fid, 
-                    occur, bias_value_with_gbias[index], feature))
+        for slot, fid, index, feature, occur in features: 
+            logging.info("[slot: %s %s] [次数:%7s] [bias_with_g_bias: %.3f vs  %.3f(label)]  (feature: %7s raw %s)" %(slot, fid, 
+                    occur, bias_value_with_gbias[index], train_data.fid2avg_label[fid], feature, raw))
+            bias_label_diff += math.fabs(train_data.fid2avg_label[fid] - bias_value_with_gbias[index])
+        logging.info("sum(bias-label) = %s" %(bias_label_diff))
+        return 
+
+    def validate(self):
+        """
+          模型验证: 输出最有前途的股票
+        """
+        # # tscode, date, TrainItem
+        # validate_items = [(ts_code, self.train_data.validate_items[0], self.train_data.validate_items[1]) for ts_code in self.train_data.validate_items]
+        # feed_dict = self._get_model_feed_dict([x[2] for x in validate_items])
+        # pred_val = sess.run(self.pred, feed_dict = feed_dict)
+        # print(pred_val)
         return 
 
 if __name__ == "__main__":
@@ -188,3 +218,4 @@ if __name__ == "__main__":
     # 所有Fid的数量，用于模型初始化embedding/bias
     model = LRModel(conf.get("model"), train_data)
     model.train()
+    model.validate()

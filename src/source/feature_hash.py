@@ -45,6 +45,21 @@ class LinearDiscrete(BaseMethod):
         feature = int((f - start) / step)
         return str(feature)
 
+class PositionDiscrete(BaseMethod):
+    """
+       计算当前点位的位置，然后离散化: 
+        pos = (d[0] - d[1])/(d[2]-d[1])
+        如depends = 30, 10, 90, 
+        则 (30-10)/ (90-10) = 0.25
+    """
+    def extract(self, fs, conf):
+        assert fs[0] >= fs[1] and fs[0] <= fs[2], "[PositionDiscrete] %s" %(fs)
+        step =conf.get("step", 0.1)
+        k = (fs[0] - fs[1]) / (fs[2] - fs[1])
+        feature = int(k / step)
+        return str(feature)
+
+
 class LogDiscrete(BaseMethod):
     """
        Log分桶离散化: 
@@ -53,7 +68,7 @@ class LogDiscrete(BaseMethod):
     def extract(self, features, conf):
         f = features[0]
         INF = 10**10
-        assert isinstance(f, float) or isinstance(f, int)
+        assert isinstance(f, float) or isinstance(f, int), "f is not float/inf%s" %(features)
         base = conf.get("base", 2)   # 底数 
         feature = int(math.log(f) /math.log(base))
         return str(feature)
