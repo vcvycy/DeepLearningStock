@@ -14,7 +14,7 @@ class BaseMethod():
           返回feature处理过的特征: 
              如:  数字离散化, features = 1.4, 离散化后，返回1
         """
-        return features
+        return features[0]
 
     def __call__(self, raw_features, conf, slot): 
         assert slot > 0 and isinstance(raw_features, list)
@@ -35,13 +35,14 @@ class LinearDiscrete(BaseMethod):
     """
     def extract(self, features, conf):
         INF = 10**10
-        assert isinstance(features, float) or isinstance(features, int), "feature: %s" %(features)
+        f = features[0]
+        assert isinstance(f, float) or isinstance(f, int), "feature: %s" %(f)
         start = conf.get("start", 0)
         step =conf.get("step", 1)
         # 区间内
-        features = min(features, conf.get("max", INF))
-        features = max(features, conf.get("min", -INF))
-        feature = int((features - start) / step)
+        f = min(f, conf.get("max", INF))
+        f = max(f, conf.get("min", -INF))
+        feature = int((f - start) / step)
         return str(feature)
 
 class LogDiscrete(BaseMethod):
@@ -50,10 +51,11 @@ class LogDiscrete(BaseMethod):
             以conf.base为底数做log
     """
     def extract(self, features, conf):
+        f = features[0]
         INF = 10**10
-        assert isinstance(features, float) or isinstance(features, int)
+        assert isinstance(f, float) or isinstance(f, int)
         base = conf.get("base", 2)   # 底数 
-        feature = int(math.log(features) /math.log(base))
+        feature = int(math.log(f) /math.log(base))
         return str(feature)
 
 class ChangeRateDiscrete(BaseMethod):
@@ -62,9 +64,9 @@ class ChangeRateDiscrete(BaseMethod):
     """
     def extract(self, features, conf):
         assert len(features) == 2, "[ChangeRateDiscrete] len !=2 %s" %(features)
-        f1, f2 = features[0], features[1]
+        f0, f1 = features[0], features[1]
         step =conf.get("step", 0.1)
-        feature =  int((f1/f2 - 1) /step)
+        feature =  int((f0/f1 - 1) /step)
         return feature
 
 
