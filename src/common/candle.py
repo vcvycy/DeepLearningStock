@@ -2,6 +2,12 @@
 import sys
 sys.path.append("..")
 from common.stock_pb2 import *
+import pandas as pd
+import mplfinance as mpf 
+from common.utils import *
+import numpy as np
+import logging
+
 class Candle(): 
     CommonAttr = [
         "time", "open", "high", "low", "close", "amount", "vol", "turnover", "pre_close", "date"
@@ -37,8 +43,8 @@ class Kline():
         """
           获取k线图 days天的涨跌幅
         """
-        if days >= len(self.candles):
-            days = len(self.candles) - 1
+        if days >= len(self):
+            days = len(self) - 1
         open = self.candles[days].close
         close = self.candles[0].close
         return close/open - 1
@@ -55,11 +61,61 @@ class Kline():
         return self.__str__()
     def __str__(self):
         rsp = "[KLine %s]\n    " %(self.name)
-        if len(self.candles) > 10:
+        if len(self) > 10:
             rsp += str(self.candles[:2]) + "..." + str(self.candles[-2:])
         else: 
             rsp += str(self.candles)
         return rsp
+    def draw(self, volume = True, mav=(7,30, 120), savefig=None, max_days= 90):
+        """
+        画k线图，data格式为
+        [
+        {
+            "Date" : timestamp,
+            "Open" : 100,
+            "Close" : 
+        }
+        ]
+        """
+        data = [
+            {
+                "Date" : str2timestamp(c.date, "%Y%m%d"),
+                "Open" : c.open,
+                "High" : c.high,
+                "Low" : c.low,
+                "Close" : c.close,
+                "Volume" : c.vol,
+            }
+            for c in self.candles[:max_days]
+        ]
+        data.reverse()
+        # timestamp转化成DateTime格式
+        index = [pd.to_datetime(timestamp2str(item["Date"])) for item in data] 
+        df = pd.DataFrame(data, columns = ["Open", "High", "Low", "Close", "Volume"], index = index)
+        df.index.name = 'Date'
+        if savefig is not None:
+            mpf.plot(df, type = 'candle', volume = volume, mav=mav, figsize=(20, 10), title=self.name, savefig=savefig)
+        else:
+            mpf.plot(df, type = 'candle', volume = volume, mav=mav, figsize=(20, 10), title=self.name)
+        return 
+    
+    def reduce(self, attr,  num, reduce_fun = "ma", offset = 0):
+        """
+          对属性attr， offset ~ offset +num这几个candle， 做reduce_fun的操作
+        """
+        fun_map = {
+            "ma" : np.mean,
+            "min" : np.min,
+            "max" : np.max,
+            "std" : np.std
+        } 
+        # 如果取的candles数太高，则强制设置小 
+        if num > len(self):
+            logging.error("candle reduce num too large: %s, reset to %s" %(num, len(self)))
+            num = len(self)
+        assert offset +num  -1 < len(self) , "offset 超出范围 %s>=%s" %(offset + num -1, len(self)) 
+        data = [getattr(self[i], attr) for i in range(offset, offset + num)]
+        return fun_map[reduce_fun](data) 
     
 if __name__ == "__main__":
     c = Candle 

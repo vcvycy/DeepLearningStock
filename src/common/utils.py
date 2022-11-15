@@ -1,6 +1,9 @@
 #coding=utf8
 import time
 import struct
+
+def timestamp2str(ts, format = "%Y-%m-%d %H:%M:%S"):
+    return time.strftime(format,time.localtime(ts))
 # 浮点数保留k位小数
 def float_trun(f, k = 3):
     try:

@@ -7,169 +7,19 @@ import random
 import tensorflow as tf
 import logging
 import numpy as np
-def load_instance(files):
-    if not isinstance(files, list):
-        files = [files]
-    instances = []
-    for file in files:
-        f = open(file, "rb")
-        while True:
-            size, data = read_file_with_size(f, Instance)
-            if size == 0:
-                break
-            instances.append(data) 
-    logging.info("第一个Instance: %s" %(instances[0])) 
-    logging.info("总训练样本: %s" %(len(instances)))
-    return instances
-
-class TrainItem():
-    def __init__(self, fids, fid_indexs, label):
-        # 这里的fid为过滤过的fid
-        self.fids = fids
-        self.label = label
-        self.fid_indexs = fid_indexs
-        return 
-    def __str__(self):
-        return "TrainItem: fids: %s; label : %s" %(self.fids, self.label)
-class TrainData():
-    def __init__(self, instances, conf):
-        self.instances = instances
-        self.conf = conf 
-        debug = self.conf.get("debug")
-        self.fid_whitelist =  set(debug.get("fid_whitelist") if debug.get("fid_whitelist") else [])    # 如果不为空，则只有这里的fid才会跑
-        self.slot_whitelist =  set(debug.get("slot_whitelist") if debug.get("slot_whitelist") else [])    # 如果不为空，则只有这里的fid才会跑
-        # 初始化每个fid的出现次数
-        self.__init_fid2occu()
-        # 给每个fid一个index，用于找embedding
-        self.__init_fid2index()
-        # 初始化训练数据
-        self.__init_train_items()
-        # Debug
-        self.__debug()
-        return
-    def __debug(self):
-        if len(self.fid_whitelist) and len(self.slot_whitelist)== 0:
-            return 
-        fid2label = {}
-        for train_item in self.train_items: 
-            label = train_item.label  
-            for fid in train_item.fids:
-                if fid not in fid2label:
-                    fid2label[fid] = []
-                fid2label[fid].append(label)
-        
-        for fid in fid2label:
-            if fid in self.fid_whitelist or fid >> 54 in self.slot_whitelist: 
-                labels = fid2label[fid] 
-                logging.info("[TrainData-Debug] fid: %s(%20s), label数量: %.3f, label_mean: %.3f", fid, self.fid2feature[fid], len(labels), np.mean(labels))
-        input("[Debug End]press any key to continue...")
-        return 
-
-    def __get_label(self, ins):
-        # 获取ins的label值
-        # 错误抛出异常
-        def binarize(ins, args):
-            #  label二值化
-            label = 0
-            threshold = args.get("threshold")
-            key = args.get("key") 
-            assert key in ins.label, "key %s not in label: %s" %(key, ins)
-            label = 0  if ins.label[key] < threshold else 1
-            return label 
-
-        label_conf = self.conf.get("label")
-        args = label_conf.get("args")
-        if label_conf.get("method") == "binarize":
-            label = binarize(ins, args)
-        else:
-            raise Exception("method unknown")
-        return label
-
-    def __init_train_items(self):
-        self.train_items = []
-        invalid_num = 0
-        for ins in self.instances:
-            try:
-                label = self.__get_label(ins)
-                fids = []
-                for fc in ins.feature:
-                    fids.extend([fid for fid in  fc.fids if fid in self.fid2index])
-                fid_indexs = [self.fid2index[fid] for fid in fids]
-                self.train_items.append(TrainItem(fids, fid_indexs, label))
-            except Exception as e:
-                print("exp: %s" %(e))
-                invalid_num += 1
-        logging.info("第一个TrainItem: %s" %(str(self.train_items[0])))
-        logging.info("文件中的instance数: %s, 异常数: %s, 可训练数量: %s" %(len(self.instances), invalid_num, len(self.train_items)))
-        return 
-
-    def __init_fid2occu(self):
-        self.fid2occur = {}   # fid出现次数
-        for ins in self.instances: 
-            for fc in ins.feature:
-                for fid in fc.fids:
-                    self.fid2occur[fid] = self.fid2occur.get(fid, 0) + 1
-        return 
-
-    def __is_fid_neeed_filter(self, fid):
-        """
-          fid 过滤逻辑
-        """
-        min_fid_occur = self.conf.get("min_fid_occurrence", 0)
-        if self.fid2occur[fid] < min_fid_occur:
-            return True 
-        # debug模式白名单才会通过
-        if len(self.fid_whitelist) > 0 and fid not in self.fid_whitelist:
-            return True
-        if len(self.slot_whitelist) > 0 and fid >> 54 not in self.slot_whitelist:
-            return True
-        return False
-
-    def __init_fid2index(self):
-        self.fid2index = {}  # 每个fid对应一个Index，通过Index找embedding 
-        self.index2fid = {}
-        self.fid2feature = {}
-        index = 0
-        fid_filtered_num = 0
-        for ins in self.instances: 
-            for fc in ins.feature:
-                for i in range(len(fc.fids)):
-                    fid = fc.fids[i]
-                    if self.__is_fid_neeed_filter(fid):
-                        fid_filtered_num +=1
-                    else:
-                        raw_feature = fc.raw_feature[i]
-                        if fid not in self.fid2index:
-                            self.fid2index[fid] = index
-                            self.index2fid[index] = fid
-                            self.fid2feature[fid] = raw_feature 
-                            index += 1  
-        
-        logging.info("FID: 过滤后fid数: %s; fid出现次数至少:%s次，过滤FID数量: %s" %(index, self.conf.get("min_fid_occurrence", 0), fid_filtered_num))
-        return 
-    
-    def get_fid_num(self):
-        """
-          返回fid总数量, 用于初始化tensorflow
-        """
-        return len(self.fid2index) 
-
-    def get_mini_batch(self, batch_size = 50):
-        """
-          从train_items随机采样batch_size个数据(这里可重复采样)
-        """
-        mini_batch = random.choices(self.train_items, k = batch_size)
-        return mini_batch
+from model_train_data import *
 
 class Model():
     def __init__(self, conf, train_data):
         self.conf = conf
         self.train_data = train_data
         self.fid_num = train_data.get_fid_num()
+        self.losses = []
         return 
     def _get_optimizer(self):
         # optimizer
         op_conf = self.conf.get("optimizer")
+        self.loss = tf.add_n(self.losses)
         if op_conf.get("type") == "MomentumOptimizer" : 
             optimizer =tf.train.MomentumOptimizer(op_conf.get("learning_rate"), op_conf.get("momentum")).minimize(self.loss)  
         elif op_conf.get("type") == "AdagradOptimizer":
@@ -177,7 +27,7 @@ class Model():
         elif op_conf.get("type") == "GradientDescentOptimizer":
             optimizer =tf.train.GradientDescentOptimizer(op_conf.get("learning_rate")).minimize(self.loss)  
         else:
-            raise Exception("unknow optimizer")
+            raise Exception("unknow optimizer") 
         return optimizer 
     
     def get_pred_and_loss(self, logits, label):
@@ -234,6 +84,15 @@ class LRModel(Model):
         logging.info("dense model: %s %s" %(self.sparse_bias, bias_fid_gate))
         bias_input = bias_fid_gate * self.sparse_bias                                 # 乘以开关
         
+        # L2 loss
+        l2_lambda = self.conf.get("l2_lambda")
+        if l2_lambda > 0:
+            # 每个fid只计算一次l2 lambda
+            b = tf.reduce_sum(bias_input, axis=0)
+            c = tf.where(tf.greater(b, 0), tf.ones_like(b), tf.zeros_like(b))
+            l2_loss = tf.reduce_sum(c * self.sparse_bias, name="l2_loss")
+            self.losses.append(l2_loss)
+            logging.info("l2_lambda: %s" %(l2_lambda))
         # 过Dense nn, 得到pred和loss
         logits = tf.reduce_sum(bias_input, axis = 1) + self.global_bias
         logging.info("bias_input:%s logits: %s" %(bias_input, logits))
@@ -272,8 +131,8 @@ class LRModel(Model):
 
         # label和预估分
         self.label = tf.placeholder(tf.float32, [None], name = "label")
-        self.pred, self.loss = self.get_pred_and_loss(logits, self.label)
-
+        self.pred, loss = self.get_pred_and_loss(logits, self.label)
+        self.losses.append(loss)
         # optimizer初始化
         self.optimizer = self._get_optimizer()
 
@@ -300,20 +159,18 @@ class LRModel(Model):
             #
         
         # 结果: 输出Fid对应的值
-        bias_value, bias_value_with_gbias = sess.run([tf.sigmoid(self.sparse_bias), tf.sigmoid(self.sparse_bias + self.global_bias)])
-        logging.info("bias_value: %s" %(bias_value))
+        bias_value, global_bias_val, bias_value_with_gbias = sess.run([self.sparse_bias, 
+                           self.global_bias, tf.sigmoid(self.sparse_bias + self.global_bias)])
+        logging.info("bias_value(原始值): %s ; global_bias: %s" %(bias_value, global_bias_val))
         features = []
         for fid in train_data.fid2index:
             feature = train_data.fid2feature[fid]
             features.append((fid>>54, fid, train_data.fid2index[fid], feature, train_data.fid2occur[fid])) 
 
-        features.sort(key= lambda x : "%s-%s" %(x[0], x[3])) # 按slot排序
-        global_bias_val = sess.run(self.global_bias)
-        logging.info("global_bais: %s" %(global_bias_val))
-        for slot, fid, index, feature, occur in features: 
-            raw_feature = train_data.fid2feature[fid]
-            logging.info("[slot: %s %s %20s] [次数: %5s] [bias: %.3f]  (%s)" %(slot, fid, 
-                    raw_feature,  occur, bias_value_with_gbias[index], feature))
+        features.sort(key= lambda x : "%s-%s" %(x[0], x[3])) # 按slot排序 
+        for slot, fid, index, feature, occur in features:  
+            logging.info("[slot: %s %s] [次数: %5s] [bias_with_g_bias: %.3f]  (raw_feature: %s)" %(slot, fid, 
+                    occur, bias_value_with_gbias[index], feature))
         return 
 
 if __name__ == "__main__":
@@ -324,7 +181,7 @@ if __name__ == "__main__":
     # 载入instance
     logging.info("START")
     logging.info("conf: %s" %(conf)) 
-    instances = load_instance(files)
+    instances = read_instances(files)
     # 预处理instance: 处理label, 过滤fid等
     train_data = TrainData(instances, conf.get("train_data"))  
 
