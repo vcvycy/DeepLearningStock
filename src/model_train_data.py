@@ -48,8 +48,8 @@ class TrainData():
         self.__debug()
         return
     def __debug(self):
-        if len(self.fid_whitelist) == 0 and len(self.slot_whitelist)== 0:
-            return 
+        # if len(self.fid_whitelist) == 0 and len(self.slot_whitelist)== 0:
+        #     return 
         print("whitelist: %s %s" %(self.fid_whitelist, self.slot_whitelist))
         fid2label = {}
         for train_item in self.train_items: 
@@ -63,7 +63,9 @@ class TrainData():
             # input("fid: %s slot: %s  ret: %s" %(fid, fid>>54, fid in self.fid_whitelist or fid >> 54 in self.slot_whitelist))
             if self._is_fid_in_whitelist(fid):
                 labels = fid2label[fid] 
-                logging.info("[TrainData-Debug] fid: %s(raw_feature: %20s), label数量: %d, label_mean: %.3f", fid, self.fid2feature[fid], len(labels), np.mean(labels))
+                logging.info("[TrainData-Debug] fid(slot: %3d): %s(raw_feature: %20s), label数量: %d, label_mean: %.3f", fid,
+                                fid>>54, self.fid2feature[fid], len(labels), np.mean(labels))
+        logging.info("[TrainData-Debug] 所有可训练的slot: %s(%s)" %(len(self.all_slots), self.all_slots))
         input("[Debug End]press any key to continue...")
         return 
 
@@ -114,10 +116,12 @@ class TrainData():
 
     def __init_fid2occu(self):
         self.fid2occur = {}   # fid出现次数
+        self.all_slots = set([])
         for ins in self.instances: 
             for fc in ins.feature:
                 for fid in fc.fids:
                     self.fid2occur[fid] = self.fid2occur.get(fid, 0) + 1
+                    self.all_slots.add(fid>>54)
         return 
 
     def __is_fid_neeed_filter(self, fid):
@@ -142,13 +146,14 @@ class TrainData():
             # 是否所有fid都被过滤
             exist_valid_fid = False
             for fc in ins.feature:
+                assert len(fc.fids) == 1, "每个feature column, 当前只支持1个fid"
                 for i in range(len(fc.fids)):
                     fid = fc.fids[i]
                     if self.__is_fid_neeed_filter(fid):
                         fid_filtered_num +=1
                     else:
                         exist_valid_fid = True
-                        raw_feature = fc.raw_feature[i]
+                        raw_feature = str(fc.raw_feature)
                         if fid not in self.fid2index:
                             self.fid2index[fid] = index
                             self.index2fid[index] = fid

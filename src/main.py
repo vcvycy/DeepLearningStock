@@ -75,7 +75,7 @@ class Engine():
             step_obj = self.get_obj_by_conf(step)
             step_obj.name = name
             self.steps.append(step_obj)
-            self.name2step["name"] = step_obj
+            self.name2step[name] = step_obj
         return self.steps
     
     def process_context_thread_fun(self, thread_idx):
@@ -171,3 +171,4 @@ if __name__ == "__main__":
     engine = Engine(args.config)
     engine.multithread_run()
     # engine.run() 
+    print("文件写到: %s" %(engine.name2step["write_instance"].save_file))

@@ -61,31 +61,35 @@ feature_columns:
     args:    # 线性分桶离散化
       base: 2
 
-  - name : amount_change_1d         # 1天内成交额变化
+  - name : amount_change_1d         # N天内成交额变化
     depends : amount.1d, amount.360d
     slot : 101
     method : ChangeRateDiscrete 
     args:    # 线性分桶离散化
-      step: 0.2                    # 变化20%分组
+      step: 0.4                    
+      max : 3
 
-  - name : amount_change_3d         # 1天内成交额变化
+  - name : amount_change_3d         # N天内成交额变化
     depends : amount.3d, amount.360d
     slot : 102
     method : ChangeRateDiscrete 
     args:    # 线性分桶离散化
-      step: 0.2                    # 变化20%分组
+      step: 0.4                    
+      max : 3
 
-  - name : amount_change_7d         # 1天内成交额变化
+  - name : amount_change_7d         # N天内成交额变化
     depends : amount.7d, amount.360d
     slot : 103
     method : ChangeRateDiscrete 
     args:    # 线性分桶离散化
-      step: 0.2                    # 变化20%分组
+      step: 0.4                    
+      max : 3
 
-  - name : amount_change_30d         # 1天内成交额变化
+  - name : amount_change_30d         # N天内成交额变化
     depends : amount.30d, amount.360d
     slot : 104
     method : ChangeRateDiscrete 
     args:    # 线性分桶离散化
-      step: 0.2                    # 变化20%分组
+      step: 0.2                    
+      max : 3
 

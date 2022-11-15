@@ -42,6 +42,7 @@ class FidExtractionStep(Step):
                 slot = self.get_auto_slot(name)
             else:
                 assert slot < self.feature_list.get("auto_slot_start", 500)  # 手工配置的slot不能重复
-            feature[name] = slot, method(raw_features, args, slot), raw_features
+            extracted_features, fids = method(raw_features, args, slot)
+            feature[name] = slot, fids , raw_features, extracted_features
         context.set(self.out_key, feature) 
         return 

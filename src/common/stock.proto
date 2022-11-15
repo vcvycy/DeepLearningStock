@@ -16,6 +16,7 @@ message FeatureColumn {
     uint64 slot = 2;
     repeated uint64 fids = 3;
     repeated string raw_feature = 4;   // debug: fids对应的raw_feature
+    repeated string extracted_features = 5; 
 }
 message Instance {
     repeated FeatureColumn feature  = 1;

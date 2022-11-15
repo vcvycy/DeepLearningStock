@@ -38,12 +38,14 @@ class WriteInstanceStep(Step):
         feature2data = context.get("fids")
         for key in feature2data:
             fc = FeatureColumn()
-            slot, fids, raw_feature = feature2data[key]
+            slot, fids, raw_feature, extracted_features = feature2data[key]
             fc.name = key
             fc.slot = slot 
             fc.fids.extend(fids)
+
             if self.write_raw_feature:
                 fc.raw_feature.extend([str(item) for item in raw_feature])
+            fc.extracted_features.extend(extracted_features)
             ins.feature.extend([fc])
         # label
         labels = context.get("label")

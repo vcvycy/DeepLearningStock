@@ -20,11 +20,11 @@ class BaseMethod():
         assert slot > 0 and isinstance(raw_features, list)
         fids = []
         # 原始特征做hash，然后拼接slot
-        extracted_feature =self.extract(raw_features, conf) 
+        extracted_feature = str(self.extract(raw_features, conf))
         # print(extracted_feature)
         hash_i54 = hash_string(extracted_feature)
         fids.append((slot << 54) + hash_i54) 
-        return fids
+        return [extracted_feature], fids
         
 class LinearDiscrete(BaseMethod):
     """
@@ -63,11 +63,13 @@ class ChangeRateDiscrete(BaseMethod):
        depend[0]/depend[1] -1, 然后离散化  
     """
     def extract(self, features, conf):
+        INF = 10**10
         assert len(features) == 2, "[ChangeRateDiscrete] len !=2 %s" %(features)
         f0, f1 = features[0], features[1]
         step =conf.get("step", 0.1)
-        feature =  int((f0/f1 - 1) /step)
-        return feature
+        feature = int((f0/f1 - 1) /step)
+        feature = min(feature, conf.get("max", INF))
+        return str(feature)
 
 
 if __name__ == "__main__":
@@ -78,4 +80,4 @@ if __name__ == "__main__":
     # m = LogDiscrete()
     # print(m([91578.18491666667], {'base': 2}, 6))
     m = ChangeRateDiscrete()
-    print(m([[2, 3]], {"step" : 0.1}, 1))
+    print(m([2878557.392, 1684190], {"step" : 0.4}, 1))
