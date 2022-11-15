@@ -23,11 +23,14 @@ def read_instances(files):
     return instances
 
 class TrainItem():
-    def __init__(self, fids, fid_indexs, label):
+    def __init__(self, fids, fid_indexs, label, date = "", ts_code = "", name = ""):
         # 这里的fid为过滤过的fid
         self.fids = fids
         self.label = label
         self.fid_indexs = fid_indexs
+        self.date = date
+        self.ts_code = ts_code
+        self.name = name
         return 
     def __str__(self):
         return "TrainItem: fids: %s; label : %s" %(self.fids, self.label)
@@ -100,21 +103,28 @@ class TrainData():
         return label
 
     def __init_train_items(self):
+        """
+        """
         self.train_items = []
-        invalid_num = 0
+        self.validate_items = []
+        ts_code2date_item = {} 
         for ins in self.valid_instances:
+
+            fids = []
+            for fc in ins.feature:
+                fids.extend([fid for fid in  fc.fids if fid in self.fid2index])
+            fid_indexs = [self.fid2index[fid] for fid in fids]
             try:
                 label = self.__get_label(ins)
-                fids = []
-                for fc in ins.feature:
-                    fids.extend([fid for fid in  fc.fids if fid in self.fid2index])
-                fid_indexs = [self.fid2index[fid] for fid in fids]
                 self.train_items.append(TrainItem(fids, fid_indexs, label))
             except Exception as e:
-                print("exp: %s" %(e))
-                invalid_num += 1
+                self.validate_items.append(TrainItem(fids, fid_indexs, 0, ts_code = ins.ts_code, date = ins.date, name = ins.name)) 
+        
+        # 验证集
+        
         logging.info("第一个TrainItem: %s" %(str(self.train_items[0])))
-        logging.info("valid instance数: %s, 异常数: %s, 可训练数量: %s" %(len(self.valid_instances), invalid_num, len(self.train_items)))
+        logging.info("valid instance数: %s, 验证集: %s, 可训练数量: %s" %(len(self.valid_instances), 
+                len(self.validate_items), len(self.train_items)))
         return 
 
     def __init_fid2occu(self):

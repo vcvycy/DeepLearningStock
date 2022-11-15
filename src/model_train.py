@@ -80,8 +80,8 @@ class LRModel(Model):
         return 
     def _init_sparse_embedding(self):
         bias_num = self.fid_num
-        weight_initer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
-        self.sparse_bias = tf.get_variable(name="bias", dtype=tf.float32, shape=[bias_num], initializer=weight_initer)
+        # weight_initer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
+        self.sparse_bias = tf.get_variable(name="bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
         logging.info("bias num: %s %s" %(bias_num, self.sparse_bias)) 
         return 
     
@@ -179,15 +179,16 @@ class LRModel(Model):
                            self.global_bias, tf.sigmoid(self.sparse_bias + self.global_bias)])
         logging.info("bias_value(原始值): %s ; global_bias: %s" %(bias_value, global_bias_val))
         features = []
-        for fid in train_data.fid2index:
+        for fid in train_data.fid2avg_label:
             raw, feature = train_data.fid2feature[fid]
             features.append((fid>>54, fid, train_data.fid2index[fid], feature, train_data.fid2occur[fid])) 
 
         bias_label_diff = 0
         features.sort(key= lambda x : "%s-%s" %(x[0], x[3])) # 按slot排序 
+        # fid2avg_label: 没有fid2index的一些数据，原因: fid2avg_label只有训练集的fid，而fid2index还包含验证集的fid
         for slot, fid, index, feature, occur in features: 
             logging.info("[slot: %s %s] [次数:%7s] [bias_with_g_bias: %.3f vs  %.3f(label)]  (feature: %7s raw %s)" %(slot, fid, 
-                    occur, bias_value_with_gbias[index], train_data.fid2avg_label[fid], feature, raw))
+                    occur, bias_value_with_gbias[index], train_data.fid2avg_label.get(fid, 0), feature, raw))
             bias_label_diff += math.fabs(train_data.fid2avg_label[fid] - bias_value_with_gbias[index])
         logging.info("sum(bias-label) = %s" %(bias_label_diff))
         return 
@@ -196,11 +197,27 @@ class LRModel(Model):
         """
           模型验证: 输出最有前途的股票
         """
+        items = self.train_data.validate_items
+        logging.info("开始预估股票: {}".format(len(items)).center(100, "="))
         # # tscode, date, TrainItem
-        # validate_items = [(ts_code, self.train_data.validate_items[0], self.train_data.validate_items[1]) for ts_code in self.train_data.validate_items]
-        # feed_dict = self._get_model_feed_dict([x[2] for x in validate_items])
-        # pred_val = sess.run(self.pred, feed_dict = feed_dict)
-        # print(pred_val)
+        results = []   # ts_code, date, pred
+        while len(items) > 0:
+            batch_size = 500
+            batch = items[:batch_size]
+            items = items[batch_size:]
+            feed_dict = self._get_model_feed_dict(batch)
+            pred_val = self.sess.run(self.pred, feed_dict = feed_dict)
+            for i in range(len(batch)):
+                results.append({
+                    "name" : batch[i].name,
+                    "date" : batch[i].date,
+                    "pred" : pred_val[i]
+                })
+        #
+        results.sort(key = lambda x : -x["pred"])
+        for i in range(min(500, len(results))):
+            r = results[i] 
+            logging.info("[Top_%s] %s %s 概率: %s" %(i, r["name"], r["date"], r["pred"]))
         return 
 
 if __name__ == "__main__":

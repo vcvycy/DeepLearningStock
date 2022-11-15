@@ -20,7 +20,7 @@ train_data:
       # - 1450672333743350316
       # - 1453955548291422233
     slot_whitelist: 
-      - 80
+      # - 80
       # - 507
       # - 82
       # - 83
@@ -40,7 +40,7 @@ model:
     learning_rate: 0.001
   mini_batch:
     batch_size: 1000
-    epoch : 5000
+    epoch : 2000
 
 # 调参经验： 
 #  1. learning rate 
