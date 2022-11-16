@@ -5,6 +5,7 @@ feature_columns:
   - name : rise_1d         # 最近3天涨跌
     depends : recent_rise.1d
     method : LinearDiscrete 
+    slot : 50
     args:   
       start: 0
       step: 0.04
@@ -14,6 +15,7 @@ feature_columns:
   - name : rise_3d         # 最近3天涨跌
     depends : recent_rise.3d
     method : LinearDiscrete 
+    slot : 51
     args:   
       start: 0
       step: 0.05
@@ -23,6 +25,7 @@ feature_columns:
   - name : rise_7d         # 最近N天涨跌
     depends : recent_rise.7d
     method : LinearDiscrete 
+    slot : 52
     args:   
       start: 0
       step: 0.10
@@ -32,6 +35,7 @@ feature_columns:
   - name : rise_30d         # 最近N天涨跌
     depends : recent_rise.30d
     method : LinearDiscrete 
+    slot : 53
     args:   
       start: 0
       step: 0.20
@@ -41,6 +45,7 @@ feature_columns:
   - name : rise_180d         # 最近N天涨跌
     depends : recent_rise.180d
     method : LinearDiscrete 
+    slot : 54
     args:   
       start: 0
       step: 0.20
@@ -51,30 +56,31 @@ feature_columns:
   #   depends :  time.date
   
   - name : week
+    slot :  60
     depends : time.week
   
 
   # 成交额相关: slot 80~100
-  - name :   last_1d_ath       # 过去1天的最高点，是往前多少天的最高点(16天以下合并)
+  - name :   last_1d_ath       # 过去n天的最高点，是往前多少天的最高点(16天以下合并)
     depends : ath.1d
     slot : 80
     method : LogDiscrete 
     args:   
       base: 2
 
-  - name :   last_3d_ath       # 过去1天的最高点，是往前多少天的最高点
+  - name :   last_3d_ath       # 过去n天的最高点，是往前多少天的最高点
     depends : ath.3d
     slot : 81
     method : LogDiscrete 
     args:   
       base: 2
-  - name :   last_7d_ath       # 过去1天的最高点，是往前多少天的最高点
+  - name :   last_7d_ath       # 过去n天的最高点，是往前多少天的最高点
     depends : ath.7d
     slot : 82
     method : LogDiscrete 
     args:   
       base: 2
-  - name :   last_14d_ath       # 过去1天的最高点，是往前多少天的最高点
+  - name :   last_14d_ath       # 过去n天的最高点，是往前多少天的最高点
     depends : ath.14d
     slot : 83
     method : LogDiscrete 
@@ -129,7 +135,7 @@ feature_columns:
     args:   
       step: 0.1
   
-  - name : price_change_10d         # 相比10日均线的位置
+  - name : price_change_10d_ma         # 相比10日均线的位置
     depends : price.close, price.close_ma_10d
     slot : 132
     method : ChangeRateDiscrete 
@@ -137,7 +143,7 @@ feature_columns:
       step: 0.1
       max : 2
 
-  - name : price_change_30d         # 相比30日均线的位置
+  - name : price_change_30d_ma         # 相比30日均线的位置
     depends : price.close, price.close_ma_30d
     slot : 133
     method : ChangeRateDiscrete 
@@ -145,22 +151,13 @@ feature_columns:
       step: 0.2
       max : 2
   
-  - name : price_change_60d         # 相比60日均线的位置
+  - name : price_change_60d_ma         # 相比60日均线的位置
     depends : price.close, price.close_ma_60d
     slot : 134
     method : ChangeRateDiscrete 
     args:   
       step: 0.2
       max : 3
-
-  - name : price_change_200d_ma         # 相比200日均线的位置
-    depends : price.close, price.close_ma_200d
-    slot : 135
-    method : ChangeRateDiscrete 
-    args:   
-      step: 0.2
-      max : 3
-  
 
   - name : price_change_200d_ma         # 相比200日均线的位置
     depends : price.close, price.close_ma_200d

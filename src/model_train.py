@@ -172,7 +172,7 @@ class LRModel(Model):
                 _, pred_val, loss_val=sess.run([self.optimizer, self.pred, self.loss],
                         feed_dict = feed_dict)
                 if i % 100 == 0:
-                    logging.info("[train-epoch:%s] loss: %s, pred:%s" %(i+1, loss_val, pred_val[:5]))
+                    logging.info("[train-epoch:%s] loss: %.2f, pred:%s" %(i+1, loss_val, pred_val[:5]))
             except KeyboardInterrupt:
                 logging.info("手动推出训练过程")
                 break
@@ -180,10 +180,14 @@ class LRModel(Model):
         bias_value, global_bias_val, bias_value_with_gbias = sess.run([self.sparse_bias, 
                            self.global_bias, tf.sigmoid(self.sparse_bias + self.global_bias)])
         logging.info("bias_value(原始值): %s ; global_bias: %s" %(bias_value, global_bias_val))
+        # 每个fid的bias值
+        self.fid2bias_val = {}
         features = []
         for fid in train_data.fid2avg_label:
             raw, feature = train_data.fid2feature[fid]
-            features.append((fid>>54, fid, train_data.fid2index[fid], feature, train_data.fid2occur[fid], raw)) 
+            fid_index = train_data.fid2index[fid]
+            self.fid2bias_val[fid] = bias_value[fid_index]
+            features.append((fid>>54, fid, fid_index, feature, train_data.fid2occur[fid], raw)) 
 
         bias_label_diff = 0
         features.sort(key= lambda x : "%s-%s" %(x[0], x[3])) # 按slot排序 
@@ -199,6 +203,11 @@ class LRModel(Model):
         """
           模型验证: 输出最有前途的股票
         """
+        def get_topk_val(fids, fid2bias_val, k = 10):
+            # 获取fid最高的K个
+            fid_val_pair = [(fid, fid2bias_val[fid]) for fid in fids]
+            fid_val_pair.sort(key= lambda x : -x[1])
+            return fid_val_pair[:k]
         items = self.train_data.validate_items
         logging.info("开始预估股票: {}".format(len(items)).center(100, "="))
         # # tscode, date, TrainItem
@@ -213,13 +222,20 @@ class LRModel(Model):
                 results.append({
                     "name" : batch[i].name,
                     "date" : batch[i].date,
-                    "pred" : pred_val[i]
+                    "pred" : pred_val[i],
+                    "item" : batch[i]
                 })
         #
         results.sort(key = lambda x : -x["pred"])
-        for i in range(min(500, len(results))):
+        for i in range(len(results)):
             r = results[i] 
             logging.info("[Top_%s] %s %s 概率: %s" %(i, r["name"], r["date"], r["pred"]))
+            # 获取topk fid
+            fids = r["item"].fids
+            topk_fid_val = get_topk_val(fids, self.fid2bias_val)
+            for fid, fid_bias in topk_fid_val:
+                raw, feature = train_data.fid2feature[fid]
+                logging.info("    [Top fid] slot: %3s fid: %s, val: %.3f feature: %s, example_raw: %s" %(fid>>54, fid, fid_bias, feature, raw))
         return 
 
 if __name__ == "__main__":

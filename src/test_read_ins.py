@@ -22,7 +22,7 @@ if __name__ == "__main__":
         size, data = read_file_with_size(f, Instance)
         if size == 0:
             break
-        if args.ts_code is not None and data.ts_code != args.ts_code:
+        if args.ts_code is not None and  args.ts_code not in data.ts_code:
             continue
         if args.date is not None and data.date != args.date:
             continue
