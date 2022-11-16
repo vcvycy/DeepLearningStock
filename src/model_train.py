@@ -162,18 +162,20 @@ class LRModel(Model):
         self.sess = sess = tf.Session()
         sess.run(tf.global_variables_initializer())
         for i in range(epoch):
-            # 获取mini batch, 并转化为input
-            mini_batch = train_data.get_mini_batch(batch_size)
-            # 获取mini batch每个item的fid开关
-            feed_dict = self._get_model_feed_dict(mini_batch)
+            try:
+                # 获取mini batch, 并转化为input
+                mini_batch = train_data.get_mini_batch(batch_size)
+                # 获取mini batch每个item的fid开关
+                feed_dict = self._get_model_feed_dict(mini_batch)
 
-            # 开始训练
-            _, pred_val, loss_val=sess.run([self.optimizer, self.pred, self.loss],
-                    feed_dict = feed_dict)
-            if i % 100 == 0:
-                logging.info("[train-epoch:%s] loss: %s, pred:%s" %(i+1, loss_val, pred_val[:5]))
-            #
-        
+                # 开始训练
+                _, pred_val, loss_val=sess.run([self.optimizer, self.pred, self.loss],
+                        feed_dict = feed_dict)
+                if i % 100 == 0:
+                    logging.info("[train-epoch:%s] loss: %s, pred:%s" %(i+1, loss_val, pred_val[:5]))
+            except KeyboardInterrupt:
+                logging.info("手动推出训练过程")
+                break
         # 结果: 输出Fid对应的值
         bias_value, global_bias_val, bias_value_with_gbias = sess.run([self.sparse_bias, 
                            self.global_bias, tf.sigmoid(self.sparse_bias + self.global_bias)])

@@ -124,11 +124,11 @@ class TrainData():
             if label is not None:
                 self.train_items.append(TrainItem(fids, fid_indexs, label))
             else: 
-                if ins.date >= self.validate_date:
-                    self.validate_items.append(TrainItem(fids, fid_indexs, 0, ts_code = ins.ts_code, date = ins.date, name = ins.name)) 
+                # if ins.date >= self.validate_date:
+                self.validate_items.append(TrainItem(fids, fid_indexs, 0, ts_code = ins.ts_code, date = ins.date, name = ins.name)) 
         
         # 验证集
-        
+        assert len(self.validate_items) > 0, "验证集大小为0"
         logging.info("第一个TrainItem: %s" %(str(self.train_items[0])))
         logging.info("valid instance数: %s, 验证集: %s, 可训练数量: %s" %(len(self.valid_instances), 
                 len(self.validate_items), len(self.train_items)))

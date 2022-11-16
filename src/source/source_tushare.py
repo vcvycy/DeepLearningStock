@@ -21,8 +21,7 @@ class TushareSource(MultiThreadSource):
         self.client = TushareApi.init_client(conf.get("api_key"))
 
         self.sample_recent_days = conf.get("sample_recent_days", 30)        # 采样最近N天
-        self.sample_min_train_days = conf.get("sample_min_train_days", 10)  # 
-        self.label_days = conf.get("label_days", 7)
+        self.sample_min_train_days = conf.get("sample_min_train_days", 10)  #
         # 获取所有股票数据
         self.all_stocks = TushareApi.get_all_stocks(self.client)
         self.stock_size = self.all_stocks.shape[0]
@@ -42,7 +41,7 @@ class TushareSource(MultiThreadSource):
             kline = TushareApi.get_kline_by_ts_code(self.client, ts_code, start_date)  
             ctx_num = 0  
             # 至少有lable_days天作为Label，所以这几天不采样训练数据
-            for idx in range(self.label_days, len(kline)):
+            for idx in range(len(kline)):
                 if ctx_num >= self.sample_recent_days:
                     break
                 if len(kline) - idx < self.sample_min_train_days:

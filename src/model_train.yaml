@@ -1,10 +1,10 @@
 log_file : "model_train.log"
 
 train_files:
-  # # 2000个股票, 365天数据
-  # - "../training_data/data.bin.20221115_2029"
+  # 1000个股票, 365天数据
+  - "../training_data/data.bin.20221116_1459"
   # 测试
-  - "../training_data/data.bin.20221115_2026"
+  # - "../training_data/data.bin.20221115_2026"
 #预处理instance: 处理label, 过滤fid等
 train_data:
   validate_date : "20221111"      # 验证集: 没有label且时间在这个后面
