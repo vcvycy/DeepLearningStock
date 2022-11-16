@@ -1,6 +1,9 @@
 # raw_feature 处理
 import hashlib
 import math
+import sys
+sys.path.append("..")
+from common.utils import *
 def hash_string(s):
     # 字符串hash成54位int
     s = str(s).encode("utf8")
@@ -42,7 +45,22 @@ class LinearDiscrete(BaseMethod):
         # 区间内
         f = min(f, conf.get("max", INF))
         f = max(f, conf.get("min", -INF))
-        feature = int((f - start) / step)
+        feature = math.floor((f - start) / step)
+        return str(feature)
+
+class DateDiffDiscrete(BaseMethod):
+    """
+        计算两个时间的diff离散化 
+    """
+    def extract(self, features, conf):
+        format = conf.get("format", "%Y%m%d")
+        step =conf.get("step", 30)
+        d1, d2 = features[0], features[1]
+        try:
+            diff_in_days = (str2timestamp(d2, format) - str2timestamp(d1, format))/86400
+        except:
+            diff_in_days = 0
+        feature = math.floor(diff_in_days / step)
         return str(feature)
 
 class PositionDiscrete(BaseMethod):
@@ -56,7 +74,7 @@ class PositionDiscrete(BaseMethod):
         assert fs[0] >= fs[1] and fs[0] <= fs[2], "[PositionDiscrete] %s" %(fs)
         step =conf.get("step", 0.1)
         k = (fs[0] - fs[1]) / (fs[2] - fs[1])
-        feature = int(k / step)
+        feature = math.floor(k / step)
         return str(feature)
 
 
@@ -70,7 +88,7 @@ class LogDiscrete(BaseMethod):
         INF = 10**10
         assert isinstance(f, float) or isinstance(f, int), "f is not float/inf%s" %(features)
         base = conf.get("base", 2)   # 底数 
-        feature = int(math.log(f) /math.log(base))
+        feature = math.floor(math.log(f) /math.log(base))
         return str(feature)
 
 class ChangeRateDiscrete(BaseMethod):
@@ -82,7 +100,7 @@ class ChangeRateDiscrete(BaseMethod):
         assert len(features) == 2, "[ChangeRateDiscrete] len !=2 %s" %(features)
         f0, f1 = features[0], features[1]
         step =conf.get("step", 0.1)
-        feature = int((f0/f1 - 1) /step)
+        feature = math.floor((f0/f1 - 1) /step)      # floor使得-0.5映射到-1, 0.5 映射到1
         feature = min(feature, conf.get("max", INF))
         return str(feature)
 
@@ -94,5 +112,8 @@ if __name__ == "__main__":
     # print(m([-0.03001876172607887], {'base': 2} , 1))
     # m = LogDiscrete()
     # print(m([91578.18491666667], {'base': 2}, 6))
-    m = ChangeRateDiscrete()
-    print(m([2878557.392, 1684190], {"step" : 0.4}, 1))
+    # m = ChangeRateDiscrete()
+    # for i in [-3, -2, -1, 0, 1, 2, 3,4]:
+    #     print(m([i, 2], {"step" : 1}, 1))
+    m = DateDiffDiscrete()
+    print(m(["20221101", "20221111"], {"step" : 1}, 136))

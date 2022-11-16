@@ -31,9 +31,11 @@ class Candle():
         return self.close / self.pre_close -1
 
 class Kline():
-    def __init__(self, name="unknown", candles = None):
+    def __init__(self, name="unknown", candles = []):
         self.name = name
-        self.candles = [] if candles is None else candles
+        self.candles = [] 
+        for c in candles:
+            self.add(c)
     
     def add(self, candle):
         self.candles.append(candle)
@@ -51,6 +53,7 @@ class Kline():
     
     def __getitem__(self, idx):
         return self.candles[idx]
+    
     def at(self, idx):
         return self.candles[idx]
 
@@ -117,6 +120,21 @@ class Kline():
         data = [getattr(self[i], attr) for i in range(offset, offset + num)]
         return fun_map[reduce_fun](data) 
     
+    def match(self, match_fun, return_date = True):
+        """
+          统计有多少个candle满足条件, 如match_fun = lambda 
+          return_date: 返回第一个不满足的时间
+        """
+        num = 0
+        date = ""  # 最后一个满足条件的日期
+        for c in self.candles:
+            if match_fun(c):
+                num += 1
+                date = c.date    # 第一个不满足约束的时间
+            else:
+                break
+        return date if return_date else num
+
 if __name__ == "__main__":
     c = Candle 
     c.high = 123

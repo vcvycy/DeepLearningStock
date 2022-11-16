@@ -9,13 +9,15 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--ts-code', type=str, default=None)
     parser.add_argument('-d', '--date', type=str, default=None)
     parser.add_argument('-f', '--fids', type=str, default="")    #包含此fid
+    # parser.add_argument('-s', '--slots', type=str, default="")    #包含此fid
     args = parser.parse_args()
 
     f = open(args.path, "rb")
-    print("f=%s" %(f))
-
-    contain_fids = set([int(f) for f in args.fids.split(",")])  
-    print(contain_fids)
+    # print("f=%s" %(f))
+    if  args.fids != "":
+        contain_fids = set([int(f) for f in args.fids.split(",")])
+    else:
+        contain_fids = set([])
     for i in range(10**10):
         size, data = read_file_with_size(f, Instance)
         if size == 0:

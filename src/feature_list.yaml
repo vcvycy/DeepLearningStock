@@ -47,8 +47,8 @@ feature_columns:
       min: -0.9
       max: 2.0
 
-  - name : date
-    depends :  time.date
+  # - name : date
+  #   depends :  time.date
   
   - name : week
     depends : time.week
@@ -81,7 +81,7 @@ feature_columns:
     args:   
       base: 2
 
-  # 成交额相关: slot 100~130
+  # 成交额相关: slot 100~129
   - name : amount_360d         # 最近360天平均成交额
     depends : amount.360d
     slot : 100
@@ -121,10 +121,65 @@ feature_columns:
       step: 0.2                    
       max : 3
 
-  # 价格相关 131 ~ 180
+  # 价格相关 130 ~ 180
   - name : fibonacci_7d         # 过去7天平均价格，在1年内的位置
-    depends : price.close_avg_7d, price.low_360d, price.high_360d
+    depends : price.close_ma_7d, price.low_360d, price.high_360d
     slot : 131
     method : PositionDiscrete 
     args:   
+      step: 0.1
+  
+  - name : price_change_10d         # 相比10日均线的位置
+    depends : price.close, price.close_ma_10d
+    slot : 132
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.1
+      max : 2
+
+  - name : price_change_30d         # 相比30日均线的位置
+    depends : price.close, price.close_ma_30d
+    slot : 133
+    method : ChangeRateDiscrete 
+    args:   
       step: 0.2
+      max : 2
+  
+  - name : price_change_60d         # 相比60日均线的位置
+    depends : price.close, price.close_ma_60d
+    slot : 134
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.2
+      max : 3
+
+  - name : price_change_200d_ma         # 相比200日均线的位置
+    depends : price.close, price.close_ma_200d
+    slot : 135
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.2
+      max : 3
+  
+
+  - name : price_change_200d_ma         # 相比200日均线的位置
+    depends : price.close, price.close_ma_200d
+    slot : 135
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.2
+      max : 3
+  
+  - name : above_200d_ma_days         # 200日均线上持续运行了多少天
+    depends : price.200d_ma_above_date, time.date
+    slot : 136
+    method : DateDiffDiscrete 
+    args:   
+      step: 15 
+  
+  - name : below_200d_ma_days         # 200日均线上持续运行了多少天
+    depends : price.200d_ma_below_date, time.date
+    slot : 137
+    method : DateDiffDiscrete 
+    args:   
+      step: 15 

@@ -17,7 +17,7 @@ class FeatureStep(Step):
             "year" : datetime_obj.year, 
             "month" : datetime_obj.month, 
             "day" : datetime_obj.day,
-            "date" : timestamp2str(timestamp, "%Y-%m-%d"),
+            "date" : timestamp2str(timestamp, "%Y%m%d"),
             "week" : datetime_obj.weekday()
         }  
         return feature
@@ -68,8 +68,18 @@ class FeatureStep(Step):
         feature = {
             "high_360d" : kline.reduce("high", 360, "max"),
             "low_360d" : kline.reduce("low", 360, "min"),
-            "close_avg_7d" : kline.reduce("close", 7, "ma")
-        }
+            # 均价
+            "close" : kline[0].close,                             #  收盘价 
+            "close_ma_7d" : kline.reduce("close", 7, "ma"),      # 7日均价
+            "close_ma_10d" : kline.reduce("close", 10, "ma"),    # 10日均价
+            "close_ma_30d" : kline.reduce("close", 30, "ma"),    # 60日均线
+            "close_ma_60d" : kline.reduce("close", 60, "ma"),    # 60日均线
+            "close_ma_200d" : kline.reduce("close", 200, "ma"),  # 200日均价
+        } 
+        # 在200日均线(只计算一个值)上、下运行了多少天
+        ma_200d = feature["close_ma_200d"] 
+        feature["200d_ma_above_date"] = kline.match(lambda c : c.close > ma_200d, return_date = True) 
+        feature["200d_ma_below_date"] = kline.match(lambda c : c.close < ma_200d, return_date = True)
         return feature
     def _execute(self, context):
         """

@@ -39,8 +39,10 @@ class TrainData():
         self.instances = instances
         self.conf = conf 
         debug = self.conf.get("debug")
+        self.validate_date = self.conf.get("validate_date", "")
         self.fid_whitelist =  set(debug.get("fid_whitelist") if debug.get("fid_whitelist") else [])    # 如果不为空，则只有这里的fid才会跑
         self.slot_whitelist =  set(debug.get("slot_whitelist") if debug.get("slot_whitelist") else [])    # 如果不为空，则只有这里的fid才会跑
+        self.slot_blacklist =  set(debug.get("slot_blacklist") if debug.get("slot_blacklist") else [])    # 如果不为空，则只有这里的fid才会跑
         # 初始化每个fid的出现次数
         self.__init_fid2occu()
         # 给每个fid一个index，用于找embedding
@@ -77,6 +79,8 @@ class TrainData():
 
     def _is_fid_in_whitelist(self, fid):
         # fid是否在白名单那
+        if fid>> 54 in self.slot_blacklist:
+            return False   # 黑名单
         if len(self.fid_whitelist) == 0 and len(self.slot_whitelist)== 0:
             #  没有配置，则都算白名单
             return True 
@@ -84,7 +88,7 @@ class TrainData():
     
     def __get_label(self, ins):
         # 获取ins的label值
-        # 错误抛出异常
+        # 错误则返回None
         def binarize(ins, args):
             #  label二值化
             label = 0
@@ -96,10 +100,12 @@ class TrainData():
 
         label_conf = self.conf.get("label")
         args = label_conf.get("args")
-        if label_conf.get("method") == "binarize":
-            label = binarize(ins, args)
-        else:
-            raise Exception("method unknown")
+        try:
+            label = None
+            if label_conf.get("method") == "binarize":
+                label = binarize(ins, args) 
+        except:
+            pass
         return label
 
     def __init_train_items(self):
@@ -114,11 +120,12 @@ class TrainData():
             for fc in ins.feature:
                 fids.extend([fid for fid in  fc.fids if fid in self.fid2index])
             fid_indexs = [self.fid2index[fid] for fid in fids]
-            try:
-                label = self.__get_label(ins)
+            label = self.__get_label(ins)
+            if label is not None:
                 self.train_items.append(TrainItem(fids, fid_indexs, label))
-            except Exception as e:
-                self.validate_items.append(TrainItem(fids, fid_indexs, 0, ts_code = ins.ts_code, date = ins.date, name = ins.name)) 
+            else: 
+                if ins.date >= self.validate_date:
+                    self.validate_items.append(TrainItem(fids, fid_indexs, 0, ts_code = ins.ts_code, date = ins.date, name = ins.name)) 
         
         # 验证集
         

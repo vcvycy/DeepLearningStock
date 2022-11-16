@@ -181,12 +181,12 @@ class LRModel(Model):
         features = []
         for fid in train_data.fid2avg_label:
             raw, feature = train_data.fid2feature[fid]
-            features.append((fid>>54, fid, train_data.fid2index[fid], feature, train_data.fid2occur[fid])) 
+            features.append((fid>>54, fid, train_data.fid2index[fid], feature, train_data.fid2occur[fid], raw)) 
 
         bias_label_diff = 0
         features.sort(key= lambda x : "%s-%s" %(x[0], x[3])) # 按slot排序 
         # fid2avg_label: 没有fid2index的一些数据，原因: fid2avg_label只有训练集的fid，而fid2index还包含验证集的fid
-        for slot, fid, index, feature, occur in features: 
+        for slot, fid, index, feature, occur, raw in features: 
             logging.info("[slot: %s %s] [次数:%7s] [bias_with_g_bias: %.3f vs  %.3f(label)]  (feature: %7s raw %s)" %(slot, fid, 
                     occur, bias_value_with_gbias[index], train_data.fid2avg_label.get(fid, 0), feature, raw))
             bias_label_diff += math.fabs(train_data.fid2avg_label[fid] - bias_value_with_gbias[index])
