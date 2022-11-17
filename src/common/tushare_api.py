@@ -20,14 +20,18 @@ def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切
 
 # Tushare的api封装
 class TushareApi:
-    ts_code2name = {}
+    __ts_code2name = {}
     @staticmethod
     def init_client(api_key):
         return ts.pro_api(api_key)
     # 获取所有股票
+    def get_name(ts_code): 
+        if len(TushareApi.__ts_code2name) == 0:
+            TushareApi.get_all_stocks()
+        return TushareApi.__ts_code2name[ts_code]
     @staticmethod
     def get_all_stocks(client):
-        global ts_code2name
+        global __ts_code2name
         # 拉取数据
         df = client.stock_basic(**{
             "ts_code": "",
@@ -48,7 +52,7 @@ class TushareApi:
             "list_date"
         ])
         for idx,value in df.iterrows():
-            TushareApi.ts_code2name[value["ts_code"]] = value["name"]
+            TushareApi.__ts_code2name[value["ts_code"]] = value["name"]
         return df
     
     @staticmethod
@@ -86,7 +90,7 @@ class TushareApi:
 if __name__ == "__main__":
     client = TushareApi.init_client("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f")
     TushareApi.get_all_stocks(client)
-    print(TushareApi.ts_code2name)
+    print(TushareApi.get_name("688737.SH"))
     # kline = TushareApi.get_kline_by_ts_code(client, "000001.SZ")
     # print(kline)
     # # kline.draw()
