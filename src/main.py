@@ -116,7 +116,7 @@ class Engine():
         # for t in threads:
         #     t.join()
         # 线程池写法
-        thread_pool = ThreadPoolExecutor(max_workers=10)
+        thread_pool = ThreadPoolExecutor(max_workers=thread_num)
         futures = []
         for i in range(thread_num):
             future = thread_pool.submit(self.process_context_thread_fun, i+1)

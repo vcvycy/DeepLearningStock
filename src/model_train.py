@@ -235,7 +235,8 @@ class LRModel(Model):
             topk_fid_val = get_topk_val(fids, self.fid2bias_val)
             for fid, fid_bias in topk_fid_val:
                 raw, feature = train_data.fid2feature[fid]
-                logging.info("    [Top fid] slot: %3s fid: %s, val: %.3f feature: %s, example_raw: %s" %(fid>>54, fid, fid_bias, feature, raw))
+                logging.info("    [Top fid] slot: %3s fid: %19s, val: %.3f label: %.3f feature: %s, example_raw: %s" %(
+                    fid>>54, fid, fid_bias, train_data.fid2avg_label.get(fid, 0), feature, raw))
         return 
 
 if __name__ == "__main__":

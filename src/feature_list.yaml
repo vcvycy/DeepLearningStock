@@ -232,7 +232,7 @@ feature_columns:
       base: 2
   
   ## 预估用户买入价格 160 ~ 170
-  - name : buy_price_1d         # 过去3日平均持仓价格，和当前收盘价对比
+  - name : buy_price_1d         # 过去1日平均持仓价格，和当前收盘价对比
     depends : buy_price.1d,price.close
     slot : 160
     method : ChangeRateDiscrete 
