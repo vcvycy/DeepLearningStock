@@ -31,8 +31,8 @@ class Candle():
         return self.close / self.pre_close -1
 
 class Kline():
-    def __init__(self, name="unknown", candles = []):
-        self.name = name
+    def __init__(self, ts_code = "unknown", candles = []):
+        self.ts_code = ts_code
         self.candles = [] 
         for c in candles:
             self.add(c)

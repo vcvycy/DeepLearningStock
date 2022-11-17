@@ -17,14 +17,17 @@ def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切
                 logging.error("[TushareApi-%s] exception: %s, retry: %s/%s, args: %s" %(fun.__name__, e, i+1, retry, args))
         raise Exception("[TushareApi] unknown failed")
     return wrapper
+
 # Tushare的api封装
 class TushareApi:
+    ts_code2name = {}
     @staticmethod
     def init_client(api_key):
         return ts.pro_api(api_key)
     # 获取所有股票
     @staticmethod
     def get_all_stocks(client):
+        global ts_code2name
         # 拉取数据
         df = client.stock_basic(**{
             "ts_code": "",
@@ -44,6 +47,8 @@ class TushareApi:
             "market",
             "list_date"
         ])
+        for idx,value in df.iterrows():
+            TushareApi.ts_code2name[value["ts_code"]] = value["name"]
         return df
     
     @staticmethod
@@ -58,7 +63,7 @@ class TushareApi:
             "high","low","close","pre_close","change",
             "pct_chg","vol","amount"
         ])
-        kline = Kline(ts_code) 
+        kline = Kline(ts_code = ts_code) 
         for i in range(kline_df.shape[0]):
             c = Candle()
             df2candle_attr = {    # dataframe的名字映射到canlde的名字中
@@ -80,10 +85,14 @@ class TushareApi:
 
 if __name__ == "__main__":
     client = TushareApi.init_client("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f")
-    kline = TushareApi.get_kline_by_ts_code(client, "000001.SZ")
-    print(kline)
-    # kline.draw()
-    print(kline.reduce("high", 360, "max"))
-    for i in range(360):
-        c = kline[i]
-        print("%s %s" %(c.date, c.high))
+    TushareApi.get_all_stocks(client)
+    print(TushareApi.ts_code2name)
+    # kline = TushareApi.get_kline_by_ts_code(client, "000001.SZ")
+    # print(kline)
+    # # kline.draw()
+    # print(kline.reduce("high", 360, "max"))
+    # print(kline.name)
+    # print(kline.ts_code)
+    # for i in range(360):
+    #     c = kline[i]
+    #     print("%s %s" %(c.date, c.high))

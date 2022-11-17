@@ -50,8 +50,8 @@ class TushareSource(MultiThreadSource):
                 candle = kline[idx]       # 训练数据最后一个蜡烛
                 context = Context("%s_%s" %(ts_code, candle.date))
                 # stock pb数据  
-                context.set("source.kline", Kline(kline.name, kline.candles[idx:]))
-                context.set("source.kline_label", Kline(kline.name, kline.candles[:idx]))
+                context.set("source.kline", Kline(ts_code = kline.ts_code, candles = kline.candles[idx:]))
+                context.set("source.kline_label", Kline(ts_code = kline.ts_code, candles = kline.candles[:idx]))
                 context.set("source.name", self.all_stocks.at[stock_idx, "name"])
                 context.set("source.time_interval", TimeInterval.Day)  # 日线图
                 context.set("source.ts_code",  ts_code)
