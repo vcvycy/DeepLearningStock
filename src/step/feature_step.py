@@ -58,7 +58,7 @@ class FeatureStep(Step):
             high_nd = kline.reduce("high", d, "max")
             for i in range(d, len(kline)):
                 if kline[i].high > high_nd:
-                    feature["%dd" %(d)] = max(i -d +1, 16)        # 过去
+                    feature["%dd" %(d)] = i -d +1
                     break 
         return feature
     
@@ -66,10 +66,22 @@ class FeatureStep(Step):
         # 价格reduce
         kline = context.get("source.kline")  
         feature = {
+            # 最近n天最高价/最低价
+            "high_1d" : kline.reduce("high", 1, "max"),
+            "low_1d" : kline.reduce("low", 1, "min"),
+            "low_3d" : kline.reduce("low", 3, "min"),
+            "high_3d" : kline.reduce("high", 3, "max"),
+            "high_7d" : kline.reduce("high", 7, "max"),
+            "low_7d" : kline.reduce("low", 7, "min"),
+
+            "high_60d" : kline.reduce("high", 60, "max"),
+            "low_60d" : kline.reduce("low", 60, "min"),
+
             "high_360d" : kline.reduce("high", 360, "max"),
             "low_360d" : kline.reduce("low", 360, "min"),
             # 均价
             "close" : kline[0].close,                             #  收盘价 
+            "close_ma_3d" : kline.reduce("close", 3, "ma"),      # 7日均价
             "close_ma_7d" : kline.reduce("close", 7, "ma"),      # 7日均价
             "close_ma_10d" : kline.reduce("close", 10, "ma"),    # 10日均价
             "close_ma_30d" : kline.reduce("close", 30, "ma"),    # 60日均线
@@ -81,6 +93,15 @@ class FeatureStep(Step):
         feature["200d_ma_above_date"] = kline.match(lambda c : c.close > ma_200d, return_date = True) 
         feature["200d_ma_below_date"] = kline.match(lambda c : c.close < ma_200d, return_date = True)
         return feature
+    
+    def get_user_hold_price(self, context):
+        # 获取用户过去n天持仓价格
+        kline = context.get("source.kline")  
+        feature = {
+            "%sd" %(d) : kline.buy_price_estimator(d)
+                    for d in [1, 3, 7, 14, 30]
+        }  
+        return feature
     def _execute(self, context):
         """
           原始特征抽取
@@ -91,7 +112,8 @@ class FeatureStep(Step):
             "vol" : self.get_vol_related_feature(context),
             "amount" : self.get_amount_related_feature(context),
             "ath" : self.get_all_time_high_feature(context),
-            "price" : self.get_price_feature(context)
+            "price" : self.get_price_feature(context),
+            "buy_price" : self.get_user_hold_price(context) 
         } 
         context.set(self.out_key, feature)
         return 

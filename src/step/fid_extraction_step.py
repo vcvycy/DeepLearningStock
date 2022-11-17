@@ -56,7 +56,7 @@ class FidExtractionStep(Step):
                 extracted_features, fids = method(raw_features, args, slot)
             except Exception as e:
                 print("feature: %s" %(context.get(self.in_key)))
-                print("Exception: %s raw: %s, method: %s" %(name, raw_features, method))
+                print("退出程序!Exception:%s %s raw: %s, method: %s" %(e, name, raw_features, method))
                 exit(0)
             feature[name] = slot, fids , raw_features, extracted_features
         context.set(self.out_key, feature) 

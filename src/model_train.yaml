@@ -1,8 +1,10 @@
 log_file : "model_train.log"
 
-train_files:
+train_files:  # 只读第一个
+  # 全量股票
+  - ../training_data/data.bin.20221116_1647
   # 1000个股票, 365天数据
-  - ../training_data/data.bin.20221116_1501
+  # - ../training_data/data.bin.20221116_1501
   # 测试
   # - "../training_data/data.bin.20221115_2026"
 #预处理instance: 处理label, 过滤fid等
@@ -12,7 +14,7 @@ train_data:
     method : binarize
     args: 
       key : next_7d_close_price   # 由于存在停牌, 故时间特征可能会导致特征穿越
-      threshold : 0.1   #
+      threshold : 0.0   #
   min_fid_occurrence : 80    # 每个fid最少出现几次
   debug:                 # debug 函数
     fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些

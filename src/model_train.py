@@ -241,7 +241,7 @@ class LRModel(Model):
 if __name__ == "__main__":
     ## 载入yaml配置文件
     conf = yaml.safe_load(open("model_train.yaml", 'r') .read())
-    files = conf.get("train_files") 
+    files = conf.get("train_files")[:1]
     logging.basicConfig(filename=conf.get("log_file"), format = '%(levelname)s %(asctime)s %(message)s', level=logging.DEBUG)
     # 载入instance
     logging.info("START")

@@ -19,23 +19,23 @@ if __name__ == "__main__":
     else:
         contain_fids = set([])
     for i in range(10**10):
-        size, data = read_file_with_size(f, Instance)
+        size, ins = read_file_with_size(f, Instance)
         if size == 0:
             break
-        if args.ts_code is not None and  args.ts_code not in data.ts_code:
+        if args.ts_code is not None and  args.ts_code not in ins.ts_code and args.ts_code not in ins.name:
             continue
-        if args.date is not None and data.date != args.date:
+        if args.date is not None and ins.date != args.date:
             continue
         if args.fids != "":
             contain = 0
-            for fc in data.feature:
+            for fc in ins.feature:
                 for fid in fc.fids:
                     if fid in contain_fids:
                         contain += 1
             if contain < len(contain_fids):
                 continue
         print('-'* 50 + str(i+1) + '-'*50)
-        print(data)
+        print(ins)
         input("press any key to continue...")
 
     # suffix = timestamp2str(time.time(), "%Y%m%d_%H")

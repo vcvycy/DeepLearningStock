@@ -2,13 +2,21 @@ auto_slot : true           # 没有配置slot, 则自动配置slot, 从slot=500�
 auto_slot_start : 500 
 
 feature_columns: 
-  - name : rise_1d         # 最近3天涨跌
+
+  # - name : date
+  #   slot : 10
+  #   depends :  time.date
+  
+  - name : week
+    slot :  11
+    depends : time.week
+  - name : rise_1d         # 最近1天涨跌
     depends : recent_rise.1d
     method : LinearDiscrete 
     slot : 50
     args:   
       start: 0
-      step: 0.04
+      step: 0.033
       min: -0.2
       max: 0.2
 
@@ -18,19 +26,17 @@ feature_columns:
     slot : 51
     args:   
       start: 0
-      step: 0.05
-      min: -0.3
-      max: 0.3
+      step: 0.033
+      max: 1
 
-  - name : rise_7d         # 最近N天涨跌
+  - name : rise_7d         # 最近7天涨跌
     depends : recent_rise.7d
     method : LinearDiscrete 
     slot : 52
     args:   
       start: 0
-      step: 0.10
-      min: -0.7
-      max: 0.7
+      step: 0.05
+      max: 3
 
   - name : rise_30d         # 最近N天涨跌
     depends : recent_rise.30d
@@ -38,9 +44,8 @@ feature_columns:
     slot : 53
     args:   
       start: 0
-      step: 0.20
-      min: -0.9
-      max: 2.0
+      step: 0.1
+      max: 3
 
   - name : rise_180d         # 最近N天涨跌
     depends : recent_rise.180d
@@ -48,19 +53,54 @@ feature_columns:
     slot : 54
     args:   
       start: 0
-      step: 0.20
-      min: -0.9
-      max: 2.0
+      step: 0.2
+      max: 5
+    
+  # 最近n天最高价 vs 当天收盘价格
+  - name : high_1d_cmp_close         # 最近N天涨跌
+    depends : price.high_1d, price.close
+    method : ChangeRateDiscrete 
+    slot : 60
+    args:   
+      step: 0.03
 
-  # - name : date
-  #   depends :  time.date
+  - name : high_3d_cmp_close         # 最近N天涨跌
+    depends : price.high_3d, price.close
+    method : ChangeRateDiscrete 
+    slot : 61
+    args:   
+      step: 0.03 
   
-  - name : week
-    slot :  60
-    depends : time.week
+  - name : high_7d_cmp_close         # 最近N天涨跌
+    depends : price.high_7d, price.close
+    method : ChangeRateDiscrete 
+    slot : 62
+    args:   
+      step: 0.03
+  
+  - name : low_1d_cmp_close         # 最近N天涨跌
+    depends : price.low_1d, price.close
+    method : ChangeRateDiscrete 
+    slot : 63
+    args:   
+      step: 0.03
+
+  - name : low_3d_cmp_close         # 最近N天涨跌
+    depends : price.low_3d, price.close
+    method : ChangeRateDiscrete 
+    slot : 64
+    args:   
+      step: 0.03 
+  
+  - name : low_7d_cmp_close         # 最近N天涨跌
+    depends : price.low_7d, price.close
+    method : ChangeRateDiscrete 
+    slot : 65
+    args:   
+      step: 0.03
   
 
-  # 成交额相关: slot 80~100
+  # 高点突破: slot 80~100
   - name :   last_1d_ath       # 过去n天的最高点，是往前多少天的最高点(16天以下合并)
     depends : ath.1d
     slot : 80
@@ -101,7 +141,7 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.4                    
-      max : 3
+      max : 5
 
   - name : amount_change_3d         # N天内成交额变化
     depends : amount.3d, amount.360d
@@ -109,7 +149,7 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.4                    
-      max : 3
+      max : 5
 
   - name : amount_change_7d         # N天内成交额变化
     depends : amount.7d, amount.360d
@@ -117,18 +157,26 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.4                    
-      max : 3
+      max : 5
 
   - name : amount_change_30d         # N天内成交额变化
     depends : amount.30d, amount.360d
     slot : 104
     method : ChangeRateDiscrete 
     args:   
-      step: 0.2                    
-      max : 3
+      step: 0.4                    
+      max : 5
 
   # 价格相关 130 ~ 180
-  - name : fibonacci_7d         # 过去7天平均价格，在1年内的位置
+
+  - name : fibonacci_3d_in60d         # 过去3天平均价格，在60交易日内的位置
+    depends : price.close_ma_3d, price.low_60d, price.high_60d
+    slot : 130
+    method : PositionDiscrete 
+    args:   
+      step: 0.1
+
+  - name : fibonacci_7d_in_1yr         # 过去7天平均价格，在1年内的位置
     depends : price.close_ma_7d, price.low_360d, price.high_360d
     slot : 131
     method : PositionDiscrete 
@@ -148,7 +196,7 @@ feature_columns:
     slot : 133
     method : ChangeRateDiscrete 
     args:   
-      step: 0.2
+      step: 0.1
       max : 2
   
   - name : price_change_60d_ma         # 相比60日均线的位置
@@ -156,15 +204,15 @@ feature_columns:
     slot : 134
     method : ChangeRateDiscrete 
     args:   
-      step: 0.2
-      max : 3
+      step: 0.1
+      max : 2
 
   - name : price_change_200d_ma         # 相比200日均线的位置
     depends : price.close, price.close_ma_200d
     slot : 135
     method : ChangeRateDiscrete 
     args:   
-      step: 0.2
+      step: 0.1
       max : 3
   
   - name : above_200d_ma_days         # 200日均线上持续运行了多少天
@@ -172,11 +220,46 @@ feature_columns:
     slot : 136
     method : DateDiffDiscrete 
     args:   
-      step: 15 
+      # step: 15 
+      base : 2
   
   - name : below_200d_ma_days         # 200日均线上持续运行了多少天
     depends : price.200d_ma_below_date, time.date
     slot : 137
     method : DateDiffDiscrete 
     args:   
-      step: 15 
+      # step: 15 
+      base: 2
+  
+  ## 预估用户买入价格 160 ~ 170
+  - name : buy_price_1d         # 过去3日平均持仓价格，和当前收盘价对比
+    depends : buy_price.1d,price.close
+    slot : 160
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.03
+      max : 0.5
+
+  - name : buy_price_3d         # 过去3日平均持仓价格，和当前收盘价对比
+    depends : buy_price.3d,price.close
+    slot : 161
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.03
+      max : 0.5
+  
+  - name : buy_price_7d         # 过去3日平均持仓价格，和当前收盘价对比
+    depends : buy_price.7d,price.close
+    slot : 162
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.03
+      max : 0.5
+
+  - name : buy_price_30d         # 过去3日平均持仓价格，和当前收盘价对比
+    depends : buy_price.30d,price.close
+    slot : 163
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.03
+      max : 0.5

@@ -54,13 +54,16 @@ class DateDiffDiscrete(BaseMethod):
     """
     def extract(self, features, conf):
         format = conf.get("format", "%Y%m%d")
-        step =conf.get("step", 30)
         d1, d2 = features[0], features[1]
         try:
             diff_in_days = (str2timestamp(d2, format) - str2timestamp(d1, format))/86400
         except:
             diff_in_days = 0
-        feature = math.floor(diff_in_days / step)
+        
+        # step =conf.get("step", 30)
+        # feature = math.floor(diff_in_days / step)
+        base = conf.get("base", 2)   # 底数 
+        feature = math.floor(math.log(diff_in_days +1) /math.log(base))
         return str(feature)
 
 class PositionDiscrete(BaseMethod):

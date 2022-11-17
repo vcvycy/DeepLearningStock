@@ -105,6 +105,7 @@ class Kline():
     def reduce(self, attr,  num, reduce_fun = "ma", offset = 0):
         """
           对属性attr， offset ~ offset +num这几个candle， 做reduce_fun的操作
+          reduce_fun为函数/or string
         """
         fun_map = {
             "ma" : np.mean,
@@ -112,14 +113,29 @@ class Kline():
             "max" : np.max,
             "std" : np.std
         } 
+        if reduce_fun in fun_map:
+            reduce_fun = fun_map[reduce_fun]
         # 如果取的candles数太高，则强制设置小 
         if num > len(self):
-            logging.error("candle reduce num too large: %s, reset to %s" %(num, len(self)))
+            # logging.error("candle reduce num too large: %s, reset to %s" %(num, len(self)))
             num = len(self)
         assert offset +num  -1 < len(self) , "offset 超出范围 %s>=%s" %(offset + num -1, len(self)) 
         data = [getattr(self[i], attr) for i in range(offset, offset + num)]
-        return fun_map[reduce_fun](data) 
+        return reduce_fun(data) 
     
+    def buy_price_estimator(self, days):
+        # 预估用户平均买入价格
+        amount_all = 0  # 总金额
+        vol_all    = 0  # 总股数
+
+        for i in range(days):
+            c = self[i]
+            vol_all += c.vol 
+            # 开/高/低/收盘平均值为持仓成本
+            amount_all += c.vol * (c.high + c.low + c.open + c.close)/4
+        return amount_all / vol_all
+
+
     def match(self, match_fun, return_date = True):
         """
           统计有多少个candle满足条件, 如match_fun = lambda 
