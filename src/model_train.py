@@ -16,6 +16,8 @@ class Model():
         self.train_data = train_data
         self.fid_num = train_data.get_fid_num()
         self.losses = []
+        self.sess = tf.Session()
+        self.writer = tf.summary.FileWriter("./tboard/", self.sess.graph)  
     #     self.init_fid2index()
     #     return 
     # def init_fid2index(self):
@@ -34,7 +36,6 @@ class Model():
     def _get_optimizer(self):
         # optimizer
         op_conf = self.conf.get("optimizer")
-        self.loss = tf.add_n(self.losses)
         if op_conf.get("type") == "MomentumOptimizer" : 
             optimizer =tf.train.MomentumOptimizer(op_conf.get("learning_rate"), op_conf.get("momentum")).minimize(self.loss)  
         elif op_conf.get("type") == "AdagradOptimizer":
@@ -66,11 +67,16 @@ class Model():
           mini-batch为TrainItem数组, 转化为feed dict
         """
         pass
-    def _pretrain(self):
-        return 
+    def dense_tower(self, x, dims):
+        # 过dnn，最后一层不会走relu
+        for dim in dims[:-1]: 
+            x = tf.layers.dense(x, dim, activation=tf.nn.relu)
+        return tf.layers.dense(x, dim, activation=None)
+    def _train(self):
+        raise Exception("need override")
     def train(self):
-        self._pretrain()
-        pass 
+        self._train()
+    
 class LRModel(Model): 
     """
       LR模型
@@ -96,7 +102,8 @@ class LRModel(Model):
         else:
             self.global_bias = tf.constant(0, dtype=tf.float32)
         bias_fid_gate = tf.placeholder(tf.float32, [None, self.fid_num], name="bias_fid_gate")  # 长度为所有fid数量， 1表示有这个Fid， 0表示没有这个fid
-        logging.info("dense model: %s %s" %(self.sparse_bias, bias_fid_gate))
+        logging.info("[BuildDenseNN]dense model: %s %s" %(self.sparse_bias, bias_fid_gate))
+        # ins_fid_num = tf.reduce_sum(bias_fid_gate, axis = 1)                          # 每个instance有多少fid
         bias_input = bias_fid_gate * self.sparse_bias                                 # 乘以开关
         
         # L2 loss
@@ -110,8 +117,19 @@ class LRModel(Model):
             self.losses.append(l2_loss)
             logging.info("l2_lambda: %s" %(l2_lambda))
         # 过Dense nn, 得到pred和loss
-        logits = tf.reduce_sum(bias_input, axis = 1) + self.global_bias
-        logging.info("bias_input:%s logits: %s" %(bias_input, logits))
+        bias_sum = tf.reduce_sum(bias_input, axis = 1)
+        logits = bias_sum + self.global_bias
+        tf.summary.scalar("logit/bias_sum", tf.reduce_mean(bias_sum))
+        tf.summary.histogram("logit/bias_sum", bias_sum)
+        if isinstance(self.conf.get("bias_nn_dims"), list):
+            dims = self.conf.get("bias_nn_dims")
+            nn_out = tf.reduce_sum(self.dense_tower(bias_input, dims), axis = 1)
+            
+            tf.summary.scalar("logit/bias_nn", tf.reduce_mean(nn_out))
+            tf.summary.histogram("logit/bias_nn", nn_out)
+            logits += nn_out
+            logging.info("[BuildDenseNN] towers: %s %s" %(dims, nn_out)) 
+        logging.info("[BuildDenseNN]bias_input:%s logits: %s" %(bias_input, logits))
 
         return bias_fid_gate, logits
 
@@ -139,7 +157,7 @@ class LRModel(Model):
         }
         return feed_dict
     
-    def train(self):
+    def _train(self):
         # 初始化embedding : fid_index -> embedding的映射
         self._init_sparse_embedding() 
         # 建图
@@ -148,7 +166,10 @@ class LRModel(Model):
         # label和预估分
         self.label = tf.placeholder(tf.float32, [None], name = "label")
         self.pred, loss = self.get_pred_and_loss(logits, self.label)
+        tf.summary.histogram("pred", self.pred)
         self.losses.append(loss)
+        self.loss = tf.add_n(self.losses)
+        tf.summary.scalar("loss", self.loss)
         # optimizer初始化
         self.optimizer = self._get_optimizer()
 
@@ -159,8 +180,9 @@ class LRModel(Model):
         # 开始训练
 
         logging.info("[Train] start to train, batch size: %s,  epoch: %s" %(batch_size, epoch))
-        self.sess = sess = tf.Session()
+        sess = self.sess
         sess.run(tf.global_variables_initializer())
+        self.all_summary = tf.summary.merge_all()
         for i in range(epoch):
             try:
                 # 获取mini batch, 并转化为input
@@ -169,8 +191,9 @@ class LRModel(Model):
                 feed_dict = self._get_model_feed_dict(mini_batch)
 
                 # 开始训练
-                _, pred_val, loss_val=sess.run([self.optimizer, self.pred, self.loss],
+                _, pred_val, loss_val, summary_val=sess.run([self.optimizer, self.pred, self.loss, self.all_summary],
                         feed_dict = feed_dict)
+                self.writer.add_summary(summary_val, i)
                 if i % 100 == 0:
                     logging.info("[train-epoch:%s] loss: %.2f, pred:%s" %(i+1, loss_val, pred_val[:5]))
             except KeyboardInterrupt:
@@ -243,7 +266,8 @@ if __name__ == "__main__":
     ## 载入yaml配置文件
     conf = yaml.safe_load(open("model_train.yaml", 'r') .read())
     files = conf.get("train_files")[:1]
-    logging.basicConfig(filename=conf.get("log_file"), format = '%(levelname)s %(asctime)s %(message)s', level=logging.DEBUG)
+    suffix = files[0].split(".")[-1] 
+    logging.basicConfig(filename="%s.%s" %(conf.get("log_file"), suffix), format = '%(levelname)s %(asctime)s %(message)s', level=logging.DEBUG)
     # 载入instance
     logging.info("START")
     logging.info("conf: %s" %(conf)) 

@@ -2,20 +2,20 @@ log_file : "model_train.log"
 
 train_files:  # 只读第一个
   # 全量股票
-  # - ../training_data/data.bin.20221116_1647
+  # - ../training_data/data.bin.20221117_1739
   # 1000个股票, 365天数据
-  - ../training_data/data.bin.20221117_1149
+  - ../training_data/data.bin.20221117_1244
   # 测试
   # - ../training_data/data.bin.20221117_1144
 #预处理instance: 处理label, 过滤fid等
 train_data:
-  validate_date : "20221114"      # 验证集: 没有label且时间在这个后面
+  validate_date : "20221027"      # 验证集: 没有label且时间在这个后面
   label:
     method : binarize
     args: 
       key : next_7d_close_price   # 由于存在停牌, 故时间特征可能会导致特征穿越
-      threshold : 0.03   #
-  min_fid_occurrence : 80    # 每个fid最少出现几次
+      threshold : 0.1   #
+  min_fid_occurrence : 50    # 每个fid最少出现几次
   debug:                 # debug 函数
     fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些
       # - 1444932513133819623
@@ -46,7 +46,7 @@ model:
   mini_batch:
     batch_size: 1000
     epoch : 20000
-
+  bias_nn_dims: [16, 8, 1]
 # 调参经验： 
 #  1. learning rate 
 #      1e-2: 2.5太高了，直接学飞
