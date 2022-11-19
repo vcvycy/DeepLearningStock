@@ -32,7 +32,10 @@ class Model():
     #                 self.fid2index[fid] = cur_index
     #                 cur_index += 1
     #     return 
-
+    def emit(self, name, tensor):
+        tf.summary.scalar(name, tf.reduce_mean(tensor))
+        tf.summary.histogram(name, tensor)
+        return 
     def _get_optimizer(self):
         # optimizer
         op_conf = self.conf.get("optimizer")
@@ -119,16 +122,14 @@ class LRModel(Model):
         # 过Dense nn, 得到pred和loss
         bias_sum = tf.reduce_sum(bias_input, axis = 1)
         logits = bias_sum + self.global_bias
-        tf.summary.scalar("logit/bias_sum", tf.reduce_mean(bias_sum))
-        tf.summary.histogram("logit/bias_sum", bias_sum)
+        self.emit("logit/bias_sum", bias_sum)
         if isinstance(self.conf.get("bias_nn_dims"), list):
             dims = self.conf.get("bias_nn_dims")
             nn_out = tf.reduce_sum(self.dense_tower(bias_input, dims), axis = 1)
-            
-            tf.summary.scalar("logit/bias_nn", tf.reduce_mean(nn_out))
-            tf.summary.histogram("logit/bias_nn", nn_out)
+            self.emit("logit/bias_nn_out", nn_out)
             logits += nn_out
             logging.info("[BuildDenseNN] towers: %s %s" %(dims, nn_out)) 
+        self.emit("logit/sum", logits)
         logging.info("[BuildDenseNN]bias_input:%s logits: %s" %(bias_input, logits))
 
         return bias_fid_gate, logits
@@ -166,10 +167,12 @@ class LRModel(Model):
         # label和预估分
         self.label = tf.placeholder(tf.float32, [None], name = "label")
         self.pred, loss = self.get_pred_and_loss(logits, self.label)
-        tf.summary.histogram("pred", self.pred)
+
+        self.emit("pred", self.pred)
         self.losses.append(loss)
         self.loss = tf.add_n(self.losses)
-        tf.summary.scalar("loss", self.loss)
+
+        self.emit("loss", self.loss)
         # optimizer初始化
         self.optimizer = self._get_optimizer()
 
