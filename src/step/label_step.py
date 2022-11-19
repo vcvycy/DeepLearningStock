@@ -1,5 +1,6 @@
 from common.utils import *
 from step.step import Step
+import numpy
 class LabelStep(Step):
     def __init__(self, conf):
         super(LabelStep, self).__init__(conf)
@@ -30,6 +31,9 @@ class LabelStep(Step):
             # 收盘价格
             close_price = kline_label[-d].close
             labels["next_%sd_close_price" %(d)] = float_trun(close_price/open_price - 1.0)
+            # 平均收盘价
+            mean_price = numpy.mean([kline.close for kline in kline_label[-d:]]) 
+            labels["next_%sd_mean_price" %(d)] =  float_trun(mean_price/open_price -1.0)
         return labels
 
     def _execute(self, context):
