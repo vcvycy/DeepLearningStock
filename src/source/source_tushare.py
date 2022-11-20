@@ -20,7 +20,7 @@ class TushareSource(MultiThreadSource):
         # 初始化tushare client
         self.client = TushareApi.init_client(conf.get("api_key"))
 
-        self.sample_recent_days = conf.get("sample_recent_days", 30)        # 采样最近N天
+        self.sample_recent_days = conf.get("sample_recent_days", 9999)        # 采样最近N天
         self.sample_min_train_days = conf.get("sample_min_train_days", 10)  #
         # 获取所有股票数据
         self.all_stocks = TushareApi.get_all_stocks(self.client)

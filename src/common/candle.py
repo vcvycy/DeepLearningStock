@@ -33,6 +33,7 @@ class Candle():
 class Kline():
     def __init__(self, ts_code = "unknown", candles = []):
         self.ts_code = ts_code
+        self.name = ts_code
         self.candles = [] 
         for c in candles:
             self.add(c)
@@ -132,7 +133,7 @@ class Kline():
             c = self[i]
             vol_all += c.vol 
             # 开/高/低/收盘平均值为持仓成本
-            amount_all += c.vol * (c.high + c.low + c.open + c.close)/4
+            amount_all += c.vol * (c.high + c.open)/2
         return amount_all / vol_all
 
 

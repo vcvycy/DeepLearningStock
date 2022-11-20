@@ -105,6 +105,7 @@ class ChangeRateDiscrete(BaseMethod):
         step =conf.get("step", 0.1)
         feature = math.floor((f0/f1 - 1) /step)      # floor使得-0.5映射到-1, 0.5 映射到1
         feature = min(feature, conf.get("max", INF))
+        feature = max(feature, conf.get("min", -INF))
         return str(feature)
 
 

@@ -10,6 +10,7 @@ feature_columns:
   - name : week
     slot :  11
     depends : time.week
+
   - name : rise_1d         # 最近1天涨跌
     depends : recent_rise.1d
     method : LinearDiscrete 
@@ -55,7 +56,7 @@ feature_columns:
       start: 0
       step: 0.2
       max: 5
-    
+  
   # 最近n天最高价 vs 当天收盘价格
   - name : high_1d_cmp_close         # 最近N天涨跌
     depends : price.high_1d, price.close
@@ -100,8 +101,8 @@ feature_columns:
       step: 0.03
   
 
-  # 高点突破: slot 80~100
-  - name :   last_1d_ath       # 过去n天的最高点，是往前多少天的最高点(16天以下合并)
+  # 高点突破: slot 80~89  低点反弹 slot 90~99
+  - name :   last_1d_ath       # 过去n天的最高点，是往前多少天的最高
     depends : ath.1d
     slot : 80
     method : LogDiscrete 
@@ -123,6 +124,34 @@ feature_columns:
   - name :   last_14d_ath       # 过去n天的最高点，是往前多少天的最高点
     depends : ath.14d
     slot : 83
+    method : LogDiscrete 
+    args:   
+      base: 2
+
+  ## 破新低
+  - name :   last_1d_atl       # 过去n天的最低，是往前多少天的最低 
+    depends : atl.1d
+    slot : 90
+    method : LogDiscrete 
+    args:   
+      base: 2
+  - name :   last_3d_atl       # 过去n天的最低，是往前多少天的最低 
+    depends : atl.3d
+    slot : 91
+    method : LogDiscrete 
+    args:   
+      base: 2
+
+  - name :   last_7d_atl       # 过去n天的最低，是往前多少天的最低 
+    depends : atl.7d
+    slot : 92
+    method : LogDiscrete 
+    args:   
+      base: 2
+
+  - name :   last_14d_atl       # 过去n天的最低，是往前多少天的最低 
+    depends : atl.14d
+    slot : 93
     method : LogDiscrete 
     args:   
       base: 2
@@ -197,7 +226,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
-      max : 2
+      min : -0.4
+      max : 0.5
   
   - name : price_change_60d_ma         # 相比60日均线的位置
     depends : price.close, price.close_ma_60d
@@ -205,7 +235,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
-      max : 2
+      min : -0.4
+      max : 0.5
 
   - name : price_change_200d_ma         # 相比200日均线的位置
     depends : price.close, price.close_ma_200d
@@ -213,7 +244,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
-      max : 3
+      min : -0.4
+      max : 1
   
   - name : above_200d_ma_days         # 200日均线上持续运行了多少天
     depends : price.200d_ma_above_date, time.date
@@ -246,7 +278,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.03
-      max : 0.5
+      min : -0.3
+      max : 0.3
   
   - name : buy_price_7d         # 过去3日平均持仓价格，和当前收盘价对比
     depends : buy_price.7d,price.close
@@ -254,7 +287,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.03
-      max : 0.5
+      min : -0.3
+      max : 0.3
 
   - name : buy_price_30d         # 过去3日平均持仓价格，和当前收盘价对比
     depends : buy_price.30d,price.close
@@ -262,4 +296,5 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.03
-      max : 0.5
+      min : -0.3
+      max : 0.3

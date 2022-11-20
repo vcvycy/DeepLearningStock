@@ -171,4 +171,5 @@ if __name__ == "__main__":
     engine = Engine(args.config)
     engine.multithread_run()
     # engine.run() 
-    print("文件写到: %s" %(engine.name2step["write_instance"].save_file))
+    print("文件写到: python test_read_ins.py -p %s" %(engine.name2step["write_instance"].save_file))
+    
