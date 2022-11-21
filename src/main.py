@@ -79,7 +79,6 @@ class Engine():
         return self.steps
     
     def process_context_thread_fun(self, thread_idx):
-        print('线程启动')
         process_context =0 
         while True:
             context = self.get_context()

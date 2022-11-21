@@ -22,6 +22,7 @@ class TushareSource(MultiThreadSource):
 
         self.sample_recent_days = conf.get("sample_recent_days", 9999)        # 采样最近N天
         self.sample_min_train_days = conf.get("sample_min_train_days", 10)  #
+        self.whitelist = conf.get("whitelist")
         # 获取所有股票数据
         self.all_stocks = TushareApi.get_all_stocks(self.client)
         self.stock_size = self.all_stocks.shape[0]
@@ -65,7 +66,9 @@ class TushareSource(MultiThreadSource):
         return ctx_num
 
     def start_multi_thread(self):
-        # self.stock_size = 5
         for i in range(self.stock_size):
+            if self.whitelist is not None:
+                if self.whitelist not in self.all_stocks.at[i, "name"] and self.whitelist not in self.all_stocks.at[i, "ts_code"] :
+                    continue                 
             self.add_thread(TushareSource.gen_contexts_thread_fun, i) 
         return 
