@@ -40,12 +40,11 @@ class LinearDiscrete(BaseMethod):
         INF = 10**10
         f = features[0]
         assert isinstance(f, float) or isinstance(f, int), "feature: %s" %(f)
-        start = conf.get("start", 0)
         step =conf.get("step", 1)
         # 区间内
         f = min(f, conf.get("max", INF))
         f = max(f, conf.get("min", -INF))
-        feature = math.floor((f - start) / step)
+        feature = math.floor(f / step)
         return str(feature)
 
 class DateDiffDiscrete(BaseMethod):
@@ -103,9 +102,10 @@ class ChangeRateDiscrete(BaseMethod):
         assert len(features) == 2, "[ChangeRateDiscrete] len !=2 %s" %(features)
         f0, f1 = features[0], features[1]
         step =conf.get("step", 0.1)
-        feature = math.floor((f0/f1 - 1) /step)      # floor使得-0.5映射到-1, 0.5 映射到1
+        feature = f0 / f1 -1      # floor使得-0.5映射到-1, 0.5 映射到1
         feature = min(feature, conf.get("max", INF))
         feature = max(feature, conf.get("min", -INF))
+        feature = math.floor(feature / step)
         return str(feature)
 
 

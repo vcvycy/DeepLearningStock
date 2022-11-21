@@ -4,3 +4,4 @@
 **tmp**
 ./training_data/*
 *.log
+*.log.*

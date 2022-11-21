@@ -64,8 +64,10 @@ class TrainData():
                 if fid not in fid2label:
                     fid2label[fid] = []
                 fid2label[fid].append(label)
-        
-        for fid in fid2label:
+        # 按slot排序
+        fids = list(fid2label)
+        fids.sort(key = lambda f : f>>54)
+        for fid in fids:
             # input("fid: %s slot: %s  ret: %s" %(fid, fid>>54, fid in self.fid_whitelist or fid >> 54 in self.slot_whitelist))
             if self._is_fid_in_whitelist(fid):
                 labels = fid2label[fid] 
@@ -170,12 +172,14 @@ class TrainData():
                 assert len(fc.fids) == 1, "每个feature column, 当前只支持1个fid"
                 for i in range(len(fc.fids)):
                     fid = fc.fids[i]
+                    raw_feature = ",".join(fc.raw_feature)
+                    extracted_features = ",".join(fc.extracted_features)
                     if self.__is_fid_neeed_filter(fid):
-                        fid_filtered_set.add(fid)
+                        if fid not in fid_filtered_set:
+                            logging.info("FID filter: slot %3s fid %20s occu: %2s feature: %s raw: %s " %(fid >>54, fid, self.fid2occur[fid], raw_feature, extracted_features))
+                            fid_filtered_set.add(fid)
                     else:
                         exist_valid_fid = True
-                        raw_feature = ",".join(fc.raw_feature)
-                        extracted_features = ",".join(fc.extracted_features)
                         if fid not in self.fid2index:
                             self.fid2index[fid] = index
                             self.index2fid[index] = fid

@@ -38,13 +38,14 @@ class Model():
         return 
     def _get_optimizer(self):
         # optimizer
+        self.learning_rate=tf.placeholder(tf.float32,name="learning_rate")
         op_conf = self.conf.get("optimizer")
         if op_conf.get("type") == "MomentumOptimizer" : 
-            optimizer =tf.train.MomentumOptimizer(op_conf.get("learning_rate"), op_conf.get("momentum")).minimize(self.loss)  
+            optimizer =tf.train.MomentumOptimizer(self.learning_rate, op_conf.get("momentum")).minimize(self.loss)  
         elif op_conf.get("type") == "AdagradOptimizer":
-            optimizer =tf.train.AdagradOptimizer(op_conf.get("learning_rate")).minimize(self.loss)  
+            optimizer =tf.train.AdagradOptimizer(self.learning_rate).minimize(self.loss)  
         elif op_conf.get("type") == "GradientDescentOptimizer":
-            optimizer =tf.train.GradientDescentOptimizer(op_conf.get("learning_rate")).minimize(self.loss)  
+            optimizer =tf.train.GradientDescentOptimizer(self.learning_rate).minimize(self.loss)  
         else:
             raise Exception("unknow optimizer") 
         return optimizer 
@@ -153,6 +154,7 @@ class LRModel(Model):
             #label
             label.append(train_item.label)
         feed_dict = {
+            self.learning_rate : self.conf.get("learning_rate"),
             self.bias_fid_gate:  bias_fid_gate,
             self.label : label
         }
@@ -169,6 +171,7 @@ class LRModel(Model):
         self.pred, loss = self.get_pred_and_loss(logits, self.label)
 
         self.emit("pred", self.pred)
+        self.emit("label", self.label)
         self.losses.append(loss)
         self.loss = tf.add_n(self.losses)
 
@@ -186,8 +189,10 @@ class LRModel(Model):
         sess = self.sess
         sess.run(tf.global_variables_initializer())
         self.all_summary = tf.summary.merge_all()
+        self.global_step = 0
         for i in range(epoch):
             try:
+                self.global_step = i
                 # 获取mini batch, 并转化为input
                 mini_batch = train_data.get_mini_batch(batch_size)
                 # 获取mini batch每个item的fid开关
@@ -198,7 +203,10 @@ class LRModel(Model):
                         feed_dict = feed_dict)
                 self.writer.add_summary(summary_val, i)
                 if i % 100 == 0:
-                    logging.info("[train-epoch:%s] loss: %.2f, pred:%s" %(i+1, loss_val, pred_val[:5]))
+                    label_avg = np.mean(feed_dict[self.label])
+                    pred_avg = np.mean(pred_val)
+                    logging.info("[train-epoch:%5s] loss: %.2f, label: %.2f pred: %.2f " %(i+1, 
+                                        loss_val, label_avg, pred_avg))
             except KeyboardInterrupt:
                 logging.info("手动推出训练过程")
                 break

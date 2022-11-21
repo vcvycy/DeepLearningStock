@@ -2,20 +2,21 @@ log_file : "model_train.log"
 
 train_files:  # 只读第一个
   # 全量股票
-  - ../training_data/data.bin.20221120_2156
+  - ../training_data/data.bin.20221121_2315
   # 1000个股票, 365天数据
   # - ../training_data/data.bin.20221118_2111
   # 测试
-  # - ../training_data/data.bin.20221117_1144
+  # - ../training_data/data.bin.20221121_1929
 #预处理instance: 处理label, 过滤fid等
 train_data:
   validate_date : "20221111"      # 验证集: 没有label且时间在这个后面
   label:
     method : binarize
     args: 
-      key : next_14d_mean_price   # 由于存在停牌, 故【时间】特征可能会导致特征穿越
-      threshold : 0.03   #
-  min_fid_occurrence : 50    # 每个fid最少出现几次
+      # key : next_14d_mean_price   #
+      key : next_14d_close_price   #
+      threshold : 0.10   #
+  min_fid_occurrence : 14    # 每个fid最少出现几次
   debug:                 # debug 函数
     fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些
       # - 1444932513133819623
@@ -23,8 +24,8 @@ train_data:
       # - 1450672333743350316
       # - 1453955548291422233
     slot_whitelist: 
-      # - 100
-      # - 507
+      # - 161
+      # - 162
       # - 82
       # - 83
     slot_blacklist:
@@ -42,15 +43,15 @@ model:
     # momentum : 0.9       # 动量
 
     type: GradientDescentOptimizer  # 效果最好
-    learning_rate: 0.001
+  learning_rate: 0.001
   mini_batch:
     batch_size: 1000
     epoch : 50000
-  bias_nn_dims: [16, 8, 1]
+  # bias_nn_dims: [16, 8, 1]
 # 调参经验： 
-#  1. learning rate 
-#      1e-2: 2.5太高了，直接学飞
-#      1e-3: 0.037
+#  1. learning rate (随着特征增加，原来适合的lr可能变得不适合)
+#      1e-2/1e-3: 太高了，直接学飞
+#      1e-4: 0.037
 #      1e-4: 0.085 会导致稀疏特征学得慢
 #  2. l2_lambda (看着没什么用)
 #      0 :    diff = 0.025

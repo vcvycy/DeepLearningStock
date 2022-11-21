@@ -29,7 +29,8 @@ feature_columns:
     args:   
       start: 0
       step: 0.033
-      max: 1
+      min: -0.3
+      max: 0.4
 
   - name : rise_7d         # 最近7天涨跌
     depends : recent_rise.7d
@@ -38,68 +39,80 @@ feature_columns:
     args:   
       start: 0
       step: 0.05
-      max: 3
+      min: -0.4
+      max: 0.6
+
 
   - name : rise_30d         # 最近N天涨跌
     depends : recent_rise.30d
     method : LinearDiscrete 
     slot : 53
     args:   
-      start: 0
       step: 0.1
-      max: 3
+      max: 2
 
   - name : rise_180d         # 最近N天涨跌
     depends : recent_rise.180d
     method : LinearDiscrete 
     slot : 54
     args:   
-      start: 0
-      step: 0.2
-      max: 5
+      step: 0.1
+      max: 2
   
   # 最近n天最高价 vs 当天收盘价格
-  - name : high_1d_cmp_close         # 最近N天涨跌
+  - name : high_1d_cmp_close         # 最近N天: high vs close
     depends : price.high_1d, price.close
     method : ChangeRateDiscrete 
     slot : 60
     args:   
       step: 0.03
+      min : 0
+      max : 0.1
 
-  - name : high_3d_cmp_close         # 最近N天涨跌
+  - name : high_3d_cmp_close         # 最近N天: high vs close
     depends : price.high_3d, price.close
     method : ChangeRateDiscrete 
     slot : 61
     args:   
       step: 0.03 
+      min : 0
+      max : 0.25
   
-  - name : high_7d_cmp_close         # 最近N天涨跌
+  - name : high_7d_cmp_close         # 最近N天: high vs close
     depends : price.high_7d, price.close
     method : ChangeRateDiscrete 
     slot : 62
     args:   
-      step: 0.03
+      step: 0.05
+      min : 0
+      max : 0.5
   
-  - name : low_1d_cmp_close         # 最近N天涨跌
+  - name : low_1d_cmp_close         # 最近N天: low vs close
     depends : price.low_1d, price.close
     method : ChangeRateDiscrete 
     slot : 63
     args:   
       step: 0.03
+      min : -0.1
+      max : 0
 
-  - name : low_3d_cmp_close         # 最近N天涨跌
+  - name : low_3d_cmp_close         # 最近N天: low vs close
     depends : price.low_3d, price.close
     method : ChangeRateDiscrete 
     slot : 64
     args:   
-      step: 0.03 
+      step: 0.03
+      min : -0.25
+      max : 0
   
-  - name : low_7d_cmp_close         # 最近N天涨跌
+  - name : low_7d_cmp_close         # 最近N天: low vs close
     depends : price.low_7d, price.close
     method : ChangeRateDiscrete 
     slot : 65
     args:   
-      step: 0.03
+      step: 0.05
+      min : -0.5
+      max : 0
   
 
   # 高点突破: slot 80~89  低点反弹 slot 90~99
@@ -170,8 +183,8 @@ feature_columns:
     slot : 101
     method : ChangeRateDiscrete 
     args:   
-      step: 0.4                    
-      max : 5
+      step: 0.4            
+      max : 7
 
   - name : amount_change_3d         # N天内成交额变化
     depends : amount.3d, amount.360d
@@ -225,6 +238,7 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
+      min : -0.5
       max : 2
 
   - name : price_change_30d_ma         # 相比30日均线的位置
@@ -251,8 +265,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
-      min : -0.4
-      max : 1
+      min : -0.6
+      max : 1.5
   
   - name : above_200d_ma_days         # 200日均线上持续运行了多少天
     depends : price.200d_ma_above_date, time.date
@@ -262,7 +276,7 @@ feature_columns:
       # step: 15 
       base : 2
   
-  - name : below_200d_ma_days         # 200日均线上持续运行了多少天
+  - name : below_200d_ma_days         # 200日均线下持续运行了多少天
     depends : price.200d_ma_below_date, time.date
     slot : 137
     method : DateDiffDiscrete 
@@ -278,8 +292,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.03
-      min : -0.3
-      max : 0.3
+      min : -0.1
+      max : 0.1
   
   - name : median_price_30d         # 过去N天的中位数买入价
     depends : median_price.30d,price.close
@@ -287,8 +301,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.03
-      min : -0.3
-      max : 0.3
+      min : -0.1
+      max : 0.1
 
   - name : median_price_60d         # 过去N天的中位数买入价
     depends : median_price.60d,price.close
@@ -296,8 +310,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.03
-      min : -0.3
-      max : 0.3
+      min : -0.15
+      max : 0.15
   
   - name : median_price_180d         # 过去N天的中位数买入价
     depends : median_price.180d,price.close
@@ -305,5 +319,5 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.03
-      min : -0.3
-      max : 0.3
+      min : -0.15
+      max : 0.15
