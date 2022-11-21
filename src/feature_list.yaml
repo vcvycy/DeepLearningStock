@@ -1,3 +1,4 @@
+# to-do: 筹码集中分布
 auto_slot : true           # 没有配置slot, 则自动配置slot, 从slot=500开始(每次全量就可以开这个)
 auto_slot_start : 500 
 
@@ -196,7 +197,13 @@ feature_columns:
       step: 0.4                    
       max : 5
 
-  # 价格相关 130 ~ 180
+  # 价格相关 125 ~ 180
+  - name : fibonacci_3d_in30d         # 过去3天平均价格，在30交易日内的位置
+    depends : price.close_ma_3d, price.low_30d, price.high_30d
+    slot : 129
+    method : PositionDiscrete 
+    args:   
+      step: 0.1
 
   - name : fibonacci_3d_in60d         # 过去3天平均价格，在60交易日内的位置
     depends : price.close_ma_3d, price.low_60d, price.high_60d
@@ -263,17 +270,10 @@ feature_columns:
       # step: 15 
       base: 2
   
-  ## 预估用户买入价格 160 ~ 170
-  - name : buy_price_1d         # 过去1日平均持仓价格，和当前收盘价对比
-    depends : buy_price.1d,price.close
-    slot : 160
-    method : ChangeRateDiscrete 
-    args:   
-      step: 0.03
-      max : 0.5
+  ## # 过去N天的中位数价格, 即支撑位置
 
-  - name : buy_price_3d         # 过去3日平均持仓价格，和当前收盘价对比
-    depends : buy_price.3d,price.close
+  - name : median_price_14d         # 过去N天的中位数价格
+    depends : median_price.14d,price.close
     slot : 161
     method : ChangeRateDiscrete 
     args:   
@@ -281,8 +281,8 @@ feature_columns:
       min : -0.3
       max : 0.3
   
-  - name : buy_price_7d         # 过去3日平均持仓价格，和当前收盘价对比
-    depends : buy_price.7d,price.close
+  - name : median_price_30d         # 过去N天的中位数价格
+    depends : median_price.30d,price.close
     slot : 162
     method : ChangeRateDiscrete 
     args:   
@@ -290,9 +290,18 @@ feature_columns:
       min : -0.3
       max : 0.3
 
-  - name : buy_price_30d         # 过去3日平均持仓价格，和当前收盘价对比
-    depends : buy_price.30d,price.close
+  - name : median_price_60d         # 过去N天的中位数价格
+    depends : median_price.60d,price.close
     slot : 163
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.03
+      min : -0.3
+      max : 0.3
+  
+  - name : median_price_180d         # 过去N天的中位数价格
+    depends : median_price.180d,price.close
+    slot : 164
     method : ChangeRateDiscrete 
     args:   
       step: 0.03

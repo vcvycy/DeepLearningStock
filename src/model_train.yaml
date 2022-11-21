@@ -2,7 +2,7 @@ log_file : "model_train.log"
 
 train_files:  # 只读第一个
   # 全量股票
-  - ../training_data/data.bin.20221118_2252
+  - ../training_data/data.bin.20221120_2156
   # 1000个股票, 365天数据
   # - ../training_data/data.bin.20221118_2111
   # 测试
@@ -13,8 +13,8 @@ train_data:
   label:
     method : binarize
     args: 
-      key : next_30d_close_price   # 由于存在停牌, 故【时间】特征可能会导致特征穿越
-      threshold : 0.1   #
+      key : next_14d_mean_price   # 由于存在停牌, 故【时间】特征可能会导致特征穿越
+      threshold : 0.03   #
   min_fid_occurrence : 50    # 每个fid最少出现几次
   debug:                 # debug 函数
     fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些

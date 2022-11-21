@@ -56,23 +56,42 @@ class FeatureStep(Step):
         for d in [1, 3, 7, 14]:           
             # 最近d天的最高价格，是过去多少天的最高价格
             high_nd = kline.reduce("high", d, "max")
+            feature["%dd" %(d)] = len(kline) -d +1    # 找不到的默认值
             for i in range(d, len(kline)):
                 if kline[i].high > high_nd:
                     feature["%dd" %(d)] = i -d +1
                     break 
         return feature
     
+
+    def get_all_time_low_feature(self, context):
+        # 突破N天新低
+        kline = context.get("source.kline")   
+        feature = {}
+        for d in [1, 3, 7, 14, 30]:           
+            # 最近d天的最低价格，是过去多少天的最低价格
+            low_nd = kline.reduce("low", d, "min") 
+            feature["%dd" %(d)] = len(kline) -d +1    # 找不到的默认值
+            for i in range(d, len(kline)):
+                if kline[i].low < low_nd:
+                    feature["%dd" %(d)] = i -d +1
+                    break 
+        return feature
+
     def get_price_feature(self, context):
         # 价格reduce
         kline = context.get("source.kline")  
         feature = {
             # 最近n天最高价/最低价
-            "high_1d" : kline.reduce("high", 1, "max"),
-            "low_1d" : kline.reduce("low", 1, "min"),
-            "low_3d" : kline.reduce("low", 3, "min"),
+            "high_1d" : kline[0].high,
+            "low_1d" : kline[0].low,
             "high_3d" : kline.reduce("high", 3, "max"),
+            "low_3d" : kline.reduce("low", 3, "min"),
             "high_7d" : kline.reduce("high", 7, "max"),
             "low_7d" : kline.reduce("low", 7, "min"),
+
+            "high_30d" : kline.reduce("high", 30, "max"),
+            "low_30d" : kline.reduce("low", 30, "min"),
 
             "high_60d" : kline.reduce("high", 60, "max"),
             "low_60d" : kline.reduce("low", 60, "min"),
@@ -94,12 +113,12 @@ class FeatureStep(Step):
         feature["200d_ma_below_date"] = kline.match(lambda c : c.close < ma_200d, return_date = True)
         return feature
     
-    def get_user_hold_price(self, context):
+    def get_median_price(self, context):
         # 获取用户过去n天持仓价格
         kline = context.get("source.kline")  
         feature = {
-            "%sd" %(d) : kline.buy_price_estimator(d)
-                    for d in [1, 3, 7, 14, 30]
+            "%sd" %(d) : kline.median_price_estimator(d)
+                    for d in [14, 30, 60, 180]
         }  
         return feature
     def _execute(self, context):
@@ -112,8 +131,9 @@ class FeatureStep(Step):
             "vol" : self.get_vol_related_feature(context),
             "amount" : self.get_amount_related_feature(context),
             "ath" : self.get_all_time_high_feature(context),
+            "atl" : self.get_all_time_low_feature(context),
             "price" : self.get_price_feature(context),
-            "buy_price" : self.get_user_hold_price(context) 
+            "median_price" : self.get_median_price(context) 
         } 
         context.set(self.out_key, feature)
         return 

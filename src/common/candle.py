@@ -124,17 +124,24 @@ class Kline():
         data = [getattr(self[i], attr) for i in range(offset, offset + num)]
         return reduce_fun(data) 
     
-    def buy_price_estimator(self, days):
-        # 预估用户平均买入价格
-        amount_all = 0  # 总金额
-        vol_all    = 0  # 总股数
-
+    def median_price_estimator(self, days):
+        # 预估用户中位数买入价格: 即支撑点之类的
+        data = []    # 保存买入价 + 买入量 
+        vol_total = 0
         for i in range(days):
             c = self[i]
-            vol_all += c.vol 
-            # 开/高/低/收盘平均值为持仓成本
-            amount_all += c.vol * (c.high + c.open)/2
-        return amount_all / vol_all
+            price = (c.open + c.close) / 2
+            data.append((price, c.vol))
+            vol_total += c.vol
+        # 加权中位数, 按价格排序
+        median_price = 0
+        median_vol = vol_total/2
+        data.sort(key = lambda x : x[0])
+        for item in data:
+            median_vol -= item[1]       # 减去量
+            if median_vol < 0:          # 中位数
+                median_price = item[0]
+        return median_price
 
 
     def match(self, match_fun, return_date = True):
