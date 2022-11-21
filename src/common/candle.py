@@ -130,7 +130,7 @@ class Kline():
         vol_total = 0
         for i in range(days):
             c = self[i]
-            price = (c.open + c.close) / 2
+            price = (c.high + c.low + c.close + c.open) / 4
             data.append((price, c.vol))
             vol_total += c.vol
         # 加权中位数, 按价格排序
@@ -141,6 +141,7 @@ class Kline():
             median_vol -= item[1]       # 减去量
             if median_vol < 0:          # 中位数
                 median_price = item[0]
+                break
         return median_price
 
 
