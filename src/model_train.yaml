@@ -2,7 +2,7 @@ log_file : "model_train.log"
 
 train_files:  # 只读第一个
   # 全量股票
-  - ../training_data/data.bin.20221121_2315
+  - ../training_data/data.bin.20221121_2324
   # 1000个股票, 365天数据
   # - ../training_data/data.bin.20221118_2111
   # 测试

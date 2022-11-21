@@ -19,8 +19,8 @@ feature_columns:
     args:   
       start: 0
       step: 0.033
-      min: -0.2
-      max: 0.2
+      min: -0.15
+      max: 0.15
 
   - name : rise_3d         # 最近3天涨跌
     depends : recent_rise.3d
