@@ -270,9 +270,9 @@ feature_columns:
       # step: 15 
       base: 2
   
-  ## # 过去N天的中位数价格, 即支撑位置
+  ## # 过去N天的中位数买入价, 即支撑位置
 
-  - name : median_price_14d         # 过去N天的中位数价格
+  - name : median_price_14d         # 过去N天的中位数买入价
     depends : median_price.14d,price.close
     slot : 161
     method : ChangeRateDiscrete 
@@ -281,7 +281,7 @@ feature_columns:
       min : -0.3
       max : 0.3
   
-  - name : median_price_30d         # 过去N天的中位数价格
+  - name : median_price_30d         # 过去N天的中位数买入价
     depends : median_price.30d,price.close
     slot : 162
     method : ChangeRateDiscrete 
@@ -290,7 +290,7 @@ feature_columns:
       min : -0.3
       max : 0.3
 
-  - name : median_price_60d         # 过去N天的中位数价格
+  - name : median_price_60d         # 过去N天的中位数买入价
     depends : median_price.60d,price.close
     slot : 163
     method : ChangeRateDiscrete 
@@ -299,7 +299,7 @@ feature_columns:
       min : -0.3
       max : 0.3
   
-  - name : median_price_180d         # 过去N天的中位数价格
+  - name : median_price_180d         # 过去N天的中位数买入价
     depends : median_price.180d,price.close
     slot : 164
     method : ChangeRateDiscrete 
