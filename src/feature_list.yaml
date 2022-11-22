@@ -7,7 +7,43 @@ feature_columns:
   # - name : date
   #   slot : 10
   #   depends :  time.date
+  # 基本数据
+  ## 市盈率
+  - name : pe
+    depends : basic.pe
+    method : LogDiscrete 
+    slot : 1
+    args:   
+      base: 2
+      min: 1
+      max: 300
+
+  - name : turnover # 换手(2.16 表示2.16%)
+    depends : basic.turnover_rate 
+    method : LinearDiscrete 
+    slot : 2
+    args:   
+      step: 5
+      max: 70
   
+  - name : turnover_f # 换手(流通股)
+    depends : basic.turnover_rate_f 
+    method : LinearDiscrete 
+    slot : 3
+    args:   
+      step: 5
+      max: 70
+
+  # 总市值(单位万)
+  - name : total_mv
+    depends : basic.total_mv
+    method : LogDiscrete 
+    slot : 4
+    args:   
+      min: 100000 # 最低10亿
+      max : 20000000 # 最高2000亿(top 15)
+      base: 2
+
   - name : week
     slot :  11
     depends : time.week
@@ -59,6 +95,15 @@ feature_columns:
       step: 0.1
       max: 2
   
+  # 当前价格
+  - name : price          
+    depends : price.close
+    method : LogDiscrete 
+    slot : 59
+    args:   
+      base: 1.995    # 1.995 ^ 9 = 500.6
+      max: 500
+
   # 最近n天最高价 vs 当天收盘价格
   - name : high_1d_cmp_close         # 最近N天: high vs close
     depends : price.high_1d, price.close
@@ -211,22 +256,22 @@ feature_columns:
       max : 5
 
   # 价格相关 125 ~ 180
-  - name : fibonacci_3d_in30d         # 过去3天平均价格，在30交易日内的位置
-    depends : price.close_ma_3d, price.low_30d, price.high_30d
+  - name : fibonacci_in30d         # 过去3天平均价格，在30交易日内的位置
+    depends : price.close, price.low_30d, price.high_30d
     slot : 129
     method : PositionDiscrete 
     args:   
       step: 0.1
 
-  - name : fibonacci_3d_in60d         # 过去3天平均价格，在60交易日内的位置
-    depends : price.close_ma_3d, price.low_60d, price.high_60d
+  - name : fibonacci_in60d         # 过去3天平均价格，在60交易日内的位置
+    depends : price.close, price.low_60d, price.high_60d
     slot : 130
     method : PositionDiscrete 
     args:   
       step: 0.1
 
-  - name : fibonacci_7d_in_1yr         # 过去7天平均价格，在1年内的位置
-    depends : price.close_ma_7d, price.low_360d, price.high_360d
+  - name : fibonacci_in_1yr         # 过去7天平均价格，在1年内的位置
+    depends : price.close, price.low_360d, price.high_360d
     slot : 131
     method : PositionDiscrete 
     args:   
@@ -238,8 +283,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
-      min : -0.5
-      max : 2
+      min : -0.4
+      max : 0.4
 
   - name : price_change_30d_ma         # 相比30日均线的位置
     depends : price.close, price.close_ma_30d

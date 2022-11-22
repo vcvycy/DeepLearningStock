@@ -9,6 +9,8 @@ import logging
 import math
 import numpy as np
 from model_train_data import *
+import time
+# time.sleep(3600*2)
 
 class Model():
     def __init__(self, conf, train_data):

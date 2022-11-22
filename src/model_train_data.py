@@ -18,7 +18,7 @@ def read_instances(files):
             if size == 0:
                 break
             instances.append(data) 
-    logging.info("第一个Instance: %s" %(instances[0])) 
+    # logging.info("第一个Instance: %s" %(instances[0])) 
     logging.info("总训练样本: %s" %(len(instances)))
     return instances
 

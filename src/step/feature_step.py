@@ -1,6 +1,9 @@
 from step.step import Step
 from common.utils import *
 from datetime import datetime
+import math
+from common.tushare_api import *
+
 class FeatureStep(Step):
     def __init__(self, conf):
         super(FeatureStep, self).__init__(conf)
@@ -121,6 +124,17 @@ class FeatureStep(Step):
                     for d in [14, 30, 60, 180]
         }  
         return feature
+    def get_basic_feature(self, context):
+        # 获取用户过去n天持仓价格
+        kline = context.get("source.kline")  
+        #例子 {'ts_code': '600519.SH', 'trade_date': '20221122', 'turnover_rate': 0.238, 'volume_ratio': None, 'pe': 36.8753, 'pb': 9.3585}}
+        feature = TushareApi.get_ts_code2basic(kline.ts_code)
+        if math.isnan(feature["pe"]):
+            feature["pe"] = 10000 
+        print("basic_feature".center(100, "="))
+        print(feature)
+        return feature 
+
     def _execute(self, context):
         """
           原始特征抽取
@@ -133,7 +147,8 @@ class FeatureStep(Step):
             "ath" : self.get_all_time_high_feature(context),
             "atl" : self.get_all_time_low_feature(context),
             "price" : self.get_price_feature(context),
-            "median_price" : self.get_median_price(context) 
+            "median_price" : self.get_median_price(context),
+            "basic" : self.get_basic_feature(context)
         } 
         context.set(self.out_key, feature)
         return 

@@ -90,6 +90,8 @@ class LogDiscrete(BaseMethod):
         INF = 10**10
         assert isinstance(f, float) or isinstance(f, int), "f is not float/inf%s" %(features)
         base = conf.get("base", 2)   # 底数 
+        f = max(f, conf.get("min", 1e-3))
+        f = min(f, conf.get("max", INF))
         feature = math.floor(math.log(f) /math.log(base))
         return str(feature)
 
