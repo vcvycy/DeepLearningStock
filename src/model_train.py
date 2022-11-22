@@ -265,9 +265,10 @@ class LRModel(Model):
         results.sort(key = lambda x : -x["pred"])
         for i in range(len(results)):
             r = results[i] 
-            logging.info("[Top_%s] %s %s 概率: %s" %(i, r["name"], r["date"], r["pred"]))
             # 获取topk fid
             fids = r["item"].fids
+            fids_label = np.mean([train_data.fid2avg_label.get(fid) for fid in fids])
+            logging.info("[Top_%s] %s %s 概率: %.4f label_avg: %.4f" %(i, r["name"], r["date"], r["pred"], fids_label))
             topk_fid_val = get_topk_val(fids, self.fid2bias_val)
             for fid, fid_bias in topk_fid_val:
                 raw, feature = train_data.fid2feature[fid]

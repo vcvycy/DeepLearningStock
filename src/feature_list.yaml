@@ -85,7 +85,8 @@ feature_columns:
     slot : 53
     args:   
       step: 0.1
-      max: 2
+      min : -0.6
+      max: 1.4
 
   - name : rise_180d         # 最近N天涨跌
     depends : recent_rise.180d
@@ -93,6 +94,7 @@ feature_columns:
     slot : 54
     args:   
       step: 0.1
+      min : -0.6
       max: 2
   
   # 当前价格
@@ -221,6 +223,7 @@ feature_columns:
     slot : 100
     method : LogDiscrete 
     args:   
+      min: 10000
       base: 2
 
   - name : amount_change_1d         # N天内成交额变化
@@ -318,7 +321,7 @@ feature_columns:
     slot : 136
     method : DateDiffDiscrete 
     args:   
-      # step: 15 
+      max : 128
       base : 2
   
   - name : below_200d_ma_days         # 200日均线下持续运行了多少天
@@ -326,7 +329,7 @@ feature_columns:
     slot : 137
     method : DateDiffDiscrete 
     args:   
-      # step: 15 
+      max : 128
       base: 2
   
   ## # 过去N天的中位数买入价, 即支撑位置

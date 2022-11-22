@@ -131,8 +131,6 @@ class FeatureStep(Step):
         feature = TushareApi.get_ts_code2basic(kline.ts_code)
         if math.isnan(feature["pe"]):
             feature["pe"] = 10000 
-        print("basic_feature".center(100, "="))
-        print(feature)
         return feature 
 
     def _execute(self, context):

@@ -94,13 +94,22 @@ class TushareApi:
         return kline 
     @staticmethod
     @TushareDecorator
-    def get_ts_code2basic(ts_code):
+    def get_ts_code2basic(ts_code, timestamp = time.time()):
         global client
+        fields = 'ts_code,trade_date,turnover_rate,turnover_rate_f,total_mv,circ_mv,volume_ratio,pe,pb'
         if len(TushareApi.ts_code2basic) == 0:
-            date = timestamp2str(int(time.time()), format = "%Y%m%d") 
-            df = client.query('daily_basic', ts_code='', trade_date=date,fields='ts_code,trade_date,turnover_rate,turnover_rate_f,total_mv,circ_mv,volume_ratio,pe,pb') 
+            date = timestamp2str(timestamp, format = "%Y%m%d") 
+            df = client.query('daily_basic', ts_code='', trade_date=date,fields=fields) 
             arr = [value.to_dict() for idx,value in df.iterrows()] 
+            if len(arr) == 0:  # 节假日等, 取前一天数据
+                return TushareApi.get_ts_code2basic(ts_code, timestamp - 86400)
             TushareApi.ts_code2basic = {x["ts_code"] : x for x in arr}
+        if ts_code not in TushareApi.ts_code2basic:
+            # 可能原因: 当前为停牌状态, 导致今日的数据没有
+            df = client.query('daily_basic', ts_code=ts_code, trade_date='', fields=fields)
+            for idx,value in df.iterrows():
+                TushareApi.ts_code2basic[ts_code] = value.to_dict()
+                break
         return TushareApi.ts_code2basic[ts_code]
     # @staticmethod
     # @TushareDecorator
@@ -111,11 +120,14 @@ if __name__ == "__main__":
     # print(TushareApi.get_all_stocks(client))
     # print(len([s for s in TushareApi.get_all_stocks(client, to_dict = True) if s["ts_code"][0] == '8']))
 
-    basic = TushareApi.get_ts_code2basic("000838.SZ")
-    print(type(basic["pe"]))
-    import math
-    print(math.isnan(basic["pe"]))
+    basic = TushareApi.get_ts_code2basic("000506.SZ")
+    print(basic)
 
+    df = client.fund_basic(market='E')
+    
+    for x in [value.to_dict() for idx,value in df.iterrows()]:
+        if "中概" in x["name"]:
+            print(x)
     # for stock in  TushareApi.get_all_stocks(client, to_dict = True):
     #     if stock["name"] == "明微电子":
     #         print(stock)

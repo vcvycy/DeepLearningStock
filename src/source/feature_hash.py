@@ -61,6 +61,7 @@ class DateDiffDiscrete(BaseMethod):
         
         # step =conf.get("step", 30)
         # feature = math.floor(diff_in_days / step)
+        diff_in_days = min(diff_in_days, conf.get("max", 9999))
         base = conf.get("base", 2)   # 底数 
         feature = math.floor(math.log(diff_in_days +1) /math.log(base))
         return str(feature)
@@ -122,4 +123,4 @@ if __name__ == "__main__":
     # for i in [-3, -2, -1, 0, 1, 2, 3,4]:
     #     print(m([i, 2], {"step" : 1}, 1))
     m = DateDiffDiscrete()
-    print(m(["20221101", "20221111"], {"step" : 1}, 136))
+    print(m(["20101101", "20221111"], {"max": 128 }, 136))
