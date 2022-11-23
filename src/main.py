@@ -92,7 +92,7 @@ class Engine():
             if self.context_num % 100 == 0:
                 # print(context)
                 logging.error("[thread-%s] context_num: %s %s cur source: %s" %(thread_idx, self.context_num, 
-                                context.id, self.sources[self.source_cursor].get_progress()))
+                                context.id, self.sources[0].get_progress()))
         return process_context
     
     def multithread_run(self):
