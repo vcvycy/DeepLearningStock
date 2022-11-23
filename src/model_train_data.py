@@ -23,10 +23,11 @@ def read_instances(files):
     return instances
 
 class TrainItem():
-    def __init__(self, fids, label, date = "", ts_code = "", name = ""):
+    def __init__(self, fids, label, raw_label, date = "", ts_code = "", name = ""):
         # 这里的fid为过滤过的fid
         self.fids = fids
         self.label = label
+        self.raw_label = raw_label   # 原始label值
         self.date = date
         self.ts_code = ts_code
         self.name = name
@@ -123,7 +124,7 @@ class TrainData():
                 label = binarize(ins, args) 
         except:
             pass
-        return label
+        return label, ins.label.get(args.get("key"))
 
     def __init_train_items(self):
         """
@@ -136,12 +137,12 @@ class TrainData():
             fids = []
             for fc in ins.feature:
                 fids.extend([fid for fid in  fc.fids if fid in self.fid2index])
-            label = self.__get_label(ins)
+            label, raw_label = self.__get_label(ins)
             if label is not None and ins.date < self.validate_date:
-                self.train_items.append(TrainItem(fids, label))
+                self.train_items.append(TrainItem(fids, label, raw_label))
             else: 
                 # 仍然写入label: 如果可用，则用户回测
-                self.validate_items.append(TrainItem(fids, label, ts_code = ins.ts_code, date = ins.date, name = ins.name))  
+                self.validate_items.append(TrainItem(fids, label, raw_label, ts_code = ins.ts_code, date = ins.date, name = ins.name))  
         # 验证集
         assert len(self.validate_items) > 0, "验证集大小为0"
         logging.info("第一个TrainItem: %s" %(str(self.train_items[0])))
@@ -165,8 +166,7 @@ class TrainData():
         """
         min_fid_occur = self.conf.get("min_fid_occurrence", 0)
         if self.fid2occur[fid] < min_fid_occur:
-            return True 
-        raise Exception("fid: %s出现次数太低，尝试调整阈值" %(fid))
+            raise Exception("fid: %s出现次数太低，尝试调整阈值 %s " %(fid, self.fid2occur[fid]))
         # debug模式白名单才会通过
         return not self._is_fid_in_whitelist(fid)
 

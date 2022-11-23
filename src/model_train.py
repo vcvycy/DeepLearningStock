@@ -253,7 +253,8 @@ class LRModel(Model):
                     "date" : batch[i].date,
                     "pred" : pred_val[i],
                     "item" : batch[i],
-                    "label" : batch[i].label
+                    "label" : batch[i].label,
+                    "raw_label" : batch[i].raw_label if batch[i].raw_label is not None else 999
                 })
         #
         results.sort(key = lambda x : -x["pred"])
@@ -269,8 +270,8 @@ class LRModel(Model):
             # 获取topk fid
             fids = r["item"].fids
             fids_label = np.mean([train_data.fid2avg_label.get(fid, 0) for fid in fids])
-            logging.info("[Top_%s] %s %s 概率: %.4f label_avg: %.4f 真实label: %s 正确率: %.2f" %(i, 
-                        r["name"], r["date"], r["pred"], fids_label, r["label"], 1.0*correct_cnt/max(1, valid_cnt)))
+            logging.info("[Top_%s] %s %s 概率: %.4f fid_label_avg: %.4f label: %s raw_label: %.3f 正确率: %.2f" %(i, 
+                        r["name"], r["date"], r["pred"], fids_label, r["label"], r["raw_label"], 1.0*correct_cnt/max(1, valid_cnt)))
             topk_fid_val = get_topk_val(fids, self.fid2bias_val)
             for fid, fid_bias in topk_fid_val:
                 raw, feature = train_data.fid2feature[fid]

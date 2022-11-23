@@ -6,7 +6,7 @@ train_files:  # 只读第一个
   # 1000个股票, 365天数据
   # - ../training_data/data.bin.20221122_1717
   # 测试
-  # - ../training_data/data.bin.20221121_1929
+  # - ../training_data/data.bin.20221122_1701
 #预处理instance: 处理label, 过滤fid等
 train_data:
   validate_date : "20221001"      # 验证集: 没有label且时间在这个后面
@@ -16,7 +16,7 @@ train_data:
       # key : next_14d_mean_price   #
       key : next_14d_close_price   #
       threshold : 0.10   #
-  min_fid_occurrence : 14    # 每个fid最少出现几次，低于这个次数，程序直接退出报错
+  min_fid_occurrence : 0    # 每个fid最少出现几次，低于这个次数，程序直接退出报错
   debug:                 # debug 函数
     fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些
       # - 1444932513133819623
