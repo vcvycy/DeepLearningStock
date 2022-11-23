@@ -23,17 +23,31 @@ def read_instances(files):
     return instances
 
 class TrainItem():
-    def __init__(self, fids, fid_indexs, label, date = "", ts_code = "", name = ""):
+    def __init__(self, fids, label, date = "", ts_code = "", name = ""):
         # 这里的fid为过滤过的fid
         self.fids = fids
         self.label = label
-        self.fid_indexs = fid_indexs
         self.date = date
         self.ts_code = ts_code
         self.name = name
         return 
     def __str__(self):
         return "TrainItem: fids: %s; label : %s" %(self.fids, self.label)
+    def get_slot_indexs(self, slot2index, fid2index):
+        """ 
+            目的: 返回每个slot对应的fid index. (保证一个slot最多一个fid)
+            参数: slot2index: n个slot，映射到0~n-1
+                 fid2index: m个slot, 映射到0~m-1
+            返回: 长度为n的数组, 每个位置表示，当前slot，对应的fid_index
+        """
+        ret = [0] * len(slot2index)
+        for fid in self.fids:
+            fid_index = fid2index[fid]
+            slot = fid >>54
+            slot_index = slot2index[slot]
+            ret[slot_index] = fid_index
+        return ret
+    
 class TrainData():
     def __init__(self, instances, conf):
         self.instances = instances
@@ -47,6 +61,7 @@ class TrainData():
         self.__init_fid2occu()
         # 给每个fid一个index，用于找embedding
         self.fid2index = {}   # 给每个fid一个index, 从0开始
+        self.slots = []
         self.__init_fid2index_ins_filter()
         # 初始化训练数据
         self.__init_train_items()
@@ -76,7 +91,7 @@ class TrainData():
                 raw_fea, extract_fea = self.fid2feature[fid]
                 logging.info("[TrainData-Debug] (slot: %3d): %s(raw: %20s, feature: %10s) , ins_num: %d, label_mean: %.3f", fid>>54,
                                 fid, raw_fea, extract_fea, len(labels), avg_label)
-        logging.info("[TrainData-Debug] 所有可训练的slot: %s(%s)" %(len(self.all_slots), self.all_slots))
+        logging.info("[TrainData-Debug] 所有可训练的slot: %s(%s)" %(len(self.slots_set), self.slots_set))
         return 
 
     def _is_fid_in_whitelist(self, fid):
@@ -121,12 +136,12 @@ class TrainData():
             fids = []
             for fc in ins.feature:
                 fids.extend([fid for fid in  fc.fids if fid in self.fid2index])
-            fid_indexs = [self.fid2index[fid] for fid in fids]
             label = self.__get_label(ins)
             if label is not None and ins.date < self.validate_date:
-                self.train_items.append(TrainItem(fids, fid_indexs, label))
+                self.train_items.append(TrainItem(fids, label))
             else: 
-                self.validate_items.append(TrainItem(fids, fid_indexs, 0, ts_code = ins.ts_code, date = ins.date, name = ins.name))  
+                # 仍然写入label: 如果可用，则用户回测
+                self.validate_items.append(TrainItem(fids, label, ts_code = ins.ts_code, date = ins.date, name = ins.name))  
         # 验证集
         assert len(self.validate_items) > 0, "验证集大小为0"
         logging.info("第一个TrainItem: %s" %(str(self.train_items[0])))
@@ -136,12 +151,12 @@ class TrainData():
 
     def __init_fid2occu(self):
         self.fid2occur = {}   # fid出现次数
-        self.all_slots = set([])
+        self.slots_set = set([])
         for ins in self.instances: 
             for fc in ins.feature:
                 for fid in fc.fids:
                     self.fid2occur[fid] = self.fid2occur.get(fid, 0) + 1
-                    self.all_slots.add(fid>>54)
+                    self.slots_set.add(fid>>54)
         return 
 
     def __is_fid_neeed_filter(self, fid):
@@ -151,6 +166,7 @@ class TrainData():
         min_fid_occur = self.conf.get("min_fid_occurrence", 0)
         if self.fid2occur[fid] < min_fid_occur:
             return True 
+        raise Exception("fid: %s出现次数太低，尝试调整阈值" %(fid))
         # debug模式白名单才会通过
         return not self._is_fid_in_whitelist(fid)
 
@@ -165,6 +181,7 @@ class TrainData():
         fid_filtered_set = set([])
 
         self.valid_instances = []
+        slot_set = set([])
         for ins in self.instances: 
             # 是否所有fid都被过滤
             exist_valid_fid = False
@@ -182,14 +199,20 @@ class TrainData():
                         exist_valid_fid = True
                         if fid not in self.fid2index:
                             self.fid2index[fid] = index
+                            slot_set.add(fid>>54)
                             self.index2fid[index] = fid
                             self.fid2feature[fid] = raw_feature, extracted_features
                             index += 1  
             if exist_valid_fid:
                 self.valid_instances.append(ins)
+        self.slots = list(slot_set)
+        self.slot2idx = {}                     # 每个slot对应一个index
+        for i in range(len(self.slots)):
+            self.slot2idx[self.slots[i]] = i
         logging.info("总Instance数量: %s 过滤后的instance数(无fid):%s" %(len(self.instances), len(self.valid_instances))) 
         assert len(self.valid_instances) > 0
         logging.info("FID: 过滤后fid数: %s; fid出现次数至少:%s次，过滤FID数量: %s" %(index, self.conf.get("min_fid_occurrence", 0), len(fid_filtered_set)))
+        logging.info("总的Slots数量: %s (%s)" %(len(self.slots), self.slots))
         return 
     
     def get_fid_num(self):

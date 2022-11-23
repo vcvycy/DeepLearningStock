@@ -15,8 +15,8 @@ feature_columns:
     slot : 1
     args:   
       base: 2
-      min: 1
-      max: 300
+      min: 7
+      max: 555
 
   - name : turnover # 换手(2.16 表示2.16%)
     depends : basic.turnover_rate 
@@ -40,7 +40,7 @@ feature_columns:
     method : LogDiscrete 
     slot : 4
     args:   
-      min: 100000 # 最低10亿
+      min: 500000 # 最低50亿
       max : 20000000 # 最高2000亿(top 15)
       base: 2
 
@@ -64,9 +64,9 @@ feature_columns:
     slot : 51
     args:   
       start: 0
-      step: 0.033
-      min: -0.3
-      max: 0.4
+      step: 0.05
+      min: -0.25
+      max: 0.3
 
   - name : rise_7d         # 最近7天涨跌
     depends : recent_rise.7d
@@ -93,7 +93,7 @@ feature_columns:
     method : LinearDiscrete 
     slot : 54
     args:   
-      step: 0.1
+      step: 0.2
       min : -0.6
       max: 2
   
@@ -103,7 +103,8 @@ feature_columns:
     method : LogDiscrete 
     slot : 59
     args:   
-      base: 1.995    # 1.995 ^ 9 = 500.6
+      base: 2 
+      min : 1
       max: 500
 
   # 最近n天最高价 vs 当天收盘价格
@@ -121,7 +122,7 @@ feature_columns:
     method : ChangeRateDiscrete 
     slot : 61
     args:   
-      step: 0.03 
+      step: 0.05 
       min : 0
       max : 0.25
   
@@ -132,7 +133,7 @@ feature_columns:
     args:   
       step: 0.05
       min : 0
-      max : 0.5
+      max : 0.3
   
   - name : low_1d_cmp_close         # 最近N天: low vs close
     depends : price.low_1d, price.close
@@ -148,7 +149,7 @@ feature_columns:
     method : ChangeRateDiscrete 
     slot : 64
     args:   
-      step: 0.03
+      step: 0.05
       min : -0.25
       max : 0
   
@@ -158,7 +159,7 @@ feature_columns:
     slot : 65
     args:   
       step: 0.05
-      min : -0.5
+      min : -0.4
       max : 0
   
 
@@ -169,6 +170,7 @@ feature_columns:
     method : LogDiscrete 
     args:   
       base: 2
+      max : 200
 
   - name :   last_3d_ath       # 过去n天的最高点，是往前多少天的最高点
     depends : ath.3d
@@ -176,18 +178,21 @@ feature_columns:
     method : LogDiscrete 
     args:   
       base: 2
+      max : 200
   - name :   last_7d_ath       # 过去n天的最高点，是往前多少天的最高点
     depends : ath.7d
     slot : 82
     method : LogDiscrete 
     args:   
       base: 2
+      max : 200
   - name :   last_14d_ath       # 过去n天的最高点，是往前多少天的最高点
     depends : ath.14d
     slot : 83
     method : LogDiscrete 
     args:   
       base: 2
+      max : 200
 
   ## 破新低
   - name :   last_1d_atl       # 过去n天的最低，是往前多少天的最低 
@@ -196,12 +201,15 @@ feature_columns:
     method : LogDiscrete 
     args:   
       base: 2
+      max : 200
+
   - name :   last_3d_atl       # 过去n天的最低，是往前多少天的最低 
     depends : atl.3d
     slot : 91
     method : LogDiscrete 
     args:   
       base: 2
+      max : 200
 
   - name :   last_7d_atl       # 过去n天的最低，是往前多少天的最低 
     depends : atl.7d
@@ -209,6 +217,7 @@ feature_columns:
     method : LogDiscrete 
     args:   
       base: 2
+      max : 200
 
   - name :   last_14d_atl       # 过去n天的最低，是往前多少天的最低 
     depends : atl.14d
@@ -216,6 +225,7 @@ feature_columns:
     method : LogDiscrete 
     args:   
       base: 2
+      max : 200
 
   # 成交额相关: slot 100~129
   - name : amount_360d         # 最近360天平均成交额
@@ -226,59 +236,58 @@ feature_columns:
       min: 10000
       base: 2
 
-  - name : amount_change_1d         # N天内成交额变化
-    depends : amount.1d, amount.360d
+  - name : amount_change_1d         # 短期成交量变化: 1天vs 7天
+    depends : amount.1d, amount.7d
     slot : 101
     method : ChangeRateDiscrete 
     args:   
       step: 0.4            
-      max : 7
+      max : 3
 
-  - name : amount_change_3d         # N天内成交额变化
-    depends : amount.3d, amount.360d
+  - name : amount_change_3d         # 中短期成交量变化: 3d vs 30d
+    depends : amount.3d, amount.30d
     slot : 102
     method : ChangeRateDiscrete 
     args:   
       step: 0.4                    
-      max : 5
+      max : 3
 
-  - name : amount_change_7d         # N天内成交额变化
-    depends : amount.7d, amount.360d
+  - name : amount_change_7d         # 中长期成交量变化: 7d vs 90d
+    depends : amount.7d, amount.90d
     slot : 103
     method : ChangeRateDiscrete 
     args:   
       step: 0.4                    
-      max : 5
+      max : 3
 
-  - name : amount_change_30d         # N天内成交额变化
-    depends : amount.30d, amount.360d
+  - name : amount_change_14d         # 周线级成交量变化: 14d vs 90d
+    depends : amount.14d, amount.90d
     slot : 104
     method : ChangeRateDiscrete 
     args:   
       step: 0.4                    
-      max : 5
-
+      max : 3
   # 价格相关 125 ~ 180
-  - name : fibonacci_in30d         # 过去3天平均价格，在30交易日内的位置
+  - name : fibonacci_in30d         # 当前价格，在30交易日内的位置
     depends : price.close, price.low_30d, price.high_30d
     slot : 129
     method : PositionDiscrete 
     args:   
-      step: 0.1
+      step: 0.2
 
-  - name : fibonacci_in60d         # 过去3天平均价格，在60交易日内的位置
+  - name : fibonacci_in60d         # 当前价格，在60交易日内的位置
     depends : price.close, price.low_60d, price.high_60d
     slot : 130
     method : PositionDiscrete 
     args:   
-      step: 0.1
+      step: 0.2
 
-  - name : fibonacci_in_1yr         # 过去7天平均价格，在1年内的位置
+  - name : fibonacci_in_1yr         # 当前价格，在1年内的位置
     depends : price.close, price.low_360d, price.high_360d
     slot : 131
     method : PositionDiscrete 
     args:   
-      step: 0.1
+      step: 0.2
   
   - name : price_change_10d_ma         # 相比10日均线的位置
     depends : price.close, price.close_ma_10d
@@ -313,8 +322,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
-      min : -0.6
-      max : 1.5
+      min : -0.5
+      max : 0.5
   
   - name : above_200d_ma_days         # 200日均线上持续运行了多少天
     depends : price.200d_ma_above_date, time.date
@@ -334,7 +343,7 @@ feature_columns:
   
   ## # 过去N天的中位数买入价, 即支撑位置
 
-  - name : median_price_14d         # 过去N天的中位数买入价
+  - name : median_price_14d         # 过去14天的中位数买入价 vs当前价格
     depends : median_price.14d,price.close
     slot : 161
     method : ChangeRateDiscrete 
@@ -343,29 +352,29 @@ feature_columns:
       min : -0.1
       max : 0.1
   
-  - name : median_price_30d         # 过去N天的中位数买入价
-    depends : median_price.30d,price.close
-    slot : 162
-    method : ChangeRateDiscrete 
-    args:   
-      step: 0.03
-      min : -0.1
-      max : 0.1
+  # - name : median_price_30d         # 过去N天的中位数买入价
+  #   depends : median_price.30d,price.close
+  #   slot : 162
+  #   method : ChangeRateDiscrete 
+  #   args:   
+  #     step: 0.03
+  #     min : -0.1
+  #     max : 0.1
 
-  - name : median_price_60d         # 过去N天的中位数买入价
-    depends : median_price.60d,price.close
-    slot : 163
-    method : ChangeRateDiscrete 
-    args:   
-      step: 0.03
-      min : -0.15
-      max : 0.15
+  # - name : median_price_60d         # 过去N天的中位数买入价
+  #   depends : median_price.60d,price.close
+  #   slot : 163
+  #   method : ChangeRateDiscrete 
+  #   args:   
+  #     step: 0.03
+  #     min : -0.15
+  #     max : 0.15
   
-  - name : median_price_180d         # 过去N天的中位数买入价
-    depends : median_price.180d,price.close
-    slot : 164
-    method : ChangeRateDiscrete 
-    args:   
-      step: 0.03
-      min : -0.15
-      max : 0.15
+  # - name : median_price_180d         # 过去N天的中位数买入价
+  #   depends : median_price.180d,price.close
+  #   slot : 164
+  #   method : ChangeRateDiscrete 
+  #   args:   
+  #     step: 0.03
+  #     min : -0.15
+  #     max : 0.15

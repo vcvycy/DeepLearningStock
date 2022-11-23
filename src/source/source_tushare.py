@@ -70,5 +70,8 @@ class TushareSource(MultiThreadSource):
             if self.whitelist is not None:
                 if self.whitelist not in self.all_stocks.at[i, "name"] and self.whitelist not in self.all_stocks.at[i, "ts_code"] :
                     continue                 
+            if self.conf.get("skip_st") == True and 'ST' in self.all_stocks.at[i, "name"]:
+                print("Filter ST Stock: %s" %(self.all_stocks.at[i, "name"]))
+                continue
             self.add_thread(TushareSource.gen_contexts_thread_fun, i) 
         return 

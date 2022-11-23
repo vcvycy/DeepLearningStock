@@ -102,26 +102,19 @@ class LRModel(Model):
         """
           建tensorflow: 这里为LR模型
         """
+        slot_num = len(self.train_data.slots)
         # 输入placehold
         if self.conf.get("global_bias") == True:
             self.global_bias = tf.get_variable(name="global_bias", dtype=tf.float32, shape=[1], initializer=tf.zeros_initializer())
         else:
             self.global_bias = tf.constant(0, dtype=tf.float32)
-        bias_fid_gate = tf.placeholder(tf.float32, [None, self.fid_num], name="bias_fid_gate")  # 长度为所有fid数量， 1表示有这个Fid， 0表示没有这个fid
-        logging.info("[BuildDenseNN]dense model: %s %s" %(self.sparse_bias, bias_fid_gate))
+        # 每个slot对应的fid下标
+        self.slot_bias_fid_index = tf.placeholder(tf.int32, [None, slot_num], name="slot_bias_fid_index")  # 长度为所有fid数量， 1表示有这个Fid， 0表示没有这个fid
         # ins_fid_num = tf.reduce_sum(bias_fid_gate, axis = 1)                          # 每个instance有多少fid
-        bias_input = bias_fid_gate * self.sparse_bias                                 # 乘以开关
+        bias_input = tf.gather(self.sparse_bias, self.slot_bias_fid_index)                                # 乘以开关
+        logging.info("[BuildDenseNN]dense model: %s fid_index: %s bias_input: %s" %(self.sparse_bias, 
+                                self.slot_bias_fid_index, bias_input))
         
-        # L2 loss
-        l2_lambda = self.conf.get("l2_lambda", 0)
-        if l2_lambda > 0:
-            self.losses.append(l2_lambda * tf.reduce_sum(tf.square(self.global_bias)))
-            # 每个fid只计算一次l2 lambda
-            b = tf.reduce_sum(bias_input, axis=0)
-            c = tf.where(tf.greater(b, 0), tf.ones_like(b), tf.zeros_like(b))
-            l2_loss = tf.reduce_sum(c * self.sparse_bias, name="l2_loss")
-            self.losses.append(l2_loss)
-            logging.info("l2_lambda: %s" %(l2_lambda))
         # 过Dense nn, 得到pred和loss
         bias_sum = tf.reduce_sum(bias_input, axis = 1)
         logits = bias_sum + self.global_bias
@@ -131,11 +124,12 @@ class LRModel(Model):
             nn_out = tf.reduce_sum(self.dense_tower(bias_input, dims), axis = 1)
             self.emit("logit/bias_nn_out", nn_out)
             logits += nn_out
+            self.losses.append(tf.reduce_sum(nn_out) * 1e-5)
             logging.info("[BuildDenseNN] towers: %s %s" %(dims, nn_out)) 
         self.emit("logit/sum", logits)
         logging.info("[BuildDenseNN]bias_input:%s logits: %s" %(bias_input, logits))
 
-        return bias_fid_gate, logits
+        return logits
 
     def _get_model_feed_dict(self, mini_batch):
         """
@@ -143,21 +137,20 @@ class LRModel(Model):
             fid_index = [2, 4,5]
             返回: [0, 0, 1, 0, 1, 1, 0...0]
         """
-        # 每个训练样本，有多少Fid开着
-        bias_fid_gate = []
+        # 每个训练样本, 每个slot对应的fid index
+        # slot_bias_fid_index
+        fid_index = []
         # 每个训练样本的label
         label = []
-        
+        slot2index = self.train_data.slot2idx
+        fid2index = self.train_data.fid2index
         for train_item in mini_batch:
-            fid_gate = [0] * self.fid_num
-            for i in train_item.fid_indexs:
-                fid_gate[i] = 1
-            bias_fid_gate.append(fid_gate)
+            fid_index.append(train_item.get_slot_indexs(slot2index, fid2index))
             #label
             label.append(train_item.label)
         feed_dict = {
             self.learning_rate : self.conf.get("learning_rate"),
-            self.bias_fid_gate:  bias_fid_gate,
+            self.slot_bias_fid_index:  fid_index,
             self.label : label
         }
         return feed_dict
@@ -166,7 +159,7 @@ class LRModel(Model):
         # 初始化embedding : fid_index -> embedding的映射
         self._init_sparse_embedding() 
         # 建图
-        self.bias_fid_gate, logits = self._build_dense_nn()
+        logits = self._build_dense_nn()
 
         # label和预估分
         self.label = tf.placeholder(tf.float32, [None], name = "label")
@@ -210,7 +203,7 @@ class LRModel(Model):
                     logging.info("[train-epoch:%5s] loss: %.2f, label: %.2f pred: %.2f " %(i+1, 
                                         loss_val, label_avg, pred_avg))
             except KeyboardInterrupt:
-                logging.info("手动推出训练过程")
+                logging.info("手动退出训练过程")
                 break
         # 结果: 输出Fid对应的值
         bias_value, global_bias_val, bias_value_with_gbias = sess.run([self.sparse_bias, 
@@ -244,7 +237,7 @@ class LRModel(Model):
             fid_val_pair = [(fid, fid2bias_val[fid]) for fid in fids]
             fid_val_pair.sort(key= lambda x : -x[1])
             return fid_val_pair[:k]
-        items = self.train_data.validate_items
+        items = self.train_data.validate_items[:100000]
         logging.info("开始预估股票: {}".format(len(items)).center(100, "="))
         # # tscode, date, TrainItem
         results = []   # ts_code, date, pred
@@ -259,16 +252,25 @@ class LRModel(Model):
                     "name" : batch[i].name,
                     "date" : batch[i].date,
                     "pred" : pred_val[i],
-                    "item" : batch[i]
+                    "item" : batch[i],
+                    "label" : batch[i].label
                 })
         #
         results.sort(key = lambda x : -x["pred"])
+        correct_cnt = 0
+        valid_cnt = 0
         for i in range(len(results)):
-            r = results[i] 
+            r = results[i]
+            # 真实label
+            if r["label"] is not None:
+                valid_cnt += 1
+                if  r["label"]> 0:
+                    correct_cnt += 1 
             # 获取topk fid
             fids = r["item"].fids
-            fids_label = np.mean([train_data.fid2avg_label.get(fid) for fid in fids])
-            logging.info("[Top_%s] %s %s 概率: %.4f label_avg: %.4f" %(i, r["name"], r["date"], r["pred"], fids_label))
+            fids_label = np.mean([train_data.fid2avg_label.get(fid, 0) for fid in fids])
+            logging.info("[Top_%s] %s %s 概率: %.4f label_avg: %.4f 真实label: %s 正确率: %.2f" %(i, 
+                        r["name"], r["date"], r["pred"], fids_label, r["label"], 1.0*correct_cnt/max(1, valid_cnt)))
             topk_fid_val = get_topk_val(fids, self.fid2bias_val)
             for fid, fid_bias in topk_fid_val:
                 raw, feature = train_data.fid2feature[fid]
@@ -293,3 +295,4 @@ if __name__ == "__main__":
     model = LRModel(conf.get("model"), train_data)
     model.train()
     model.validate()
+    print("执行: python parse_log.py  < ../log/model_train.log.20221122_1717 查看某一天具体正确率")

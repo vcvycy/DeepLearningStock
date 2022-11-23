@@ -1,22 +1,22 @@
-log_file : "model_train.log"
+log_file : "../log/model_train.log"
 
 train_files:  # 只读第一个
   # 全量股票
-  - ../training_data/data.bin.20221121_2324
+  - ../training_data/data.bin.20221123_2106
   # 1000个股票, 365天数据
-  # - ../training_data/data.bin.20221118_2111
+  # - ../training_data/data.bin.20221122_1717
   # 测试
   # - ../training_data/data.bin.20221121_1929
 #预处理instance: 处理label, 过滤fid等
 train_data:
-  validate_date : "20221111"      # 验证集: 没有label且时间在这个后面
+  validate_date : "20221001"      # 验证集: 没有label且时间在这个后面
   label:
     method : binarize
     args: 
       # key : next_14d_mean_price   #
       key : next_14d_close_price   #
       threshold : 0.10   #
-  min_fid_occurrence : 14    # 每个fid最少出现几次
+  min_fid_occurrence : 14    # 每个fid最少出现几次，低于这个次数，程序直接退出报错
   debug:                 # debug 函数
     fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些
       # - 1444932513133819623
@@ -24,18 +24,24 @@ train_data:
       # - 1450672333743350316
       # - 1453955548291422233
     slot_whitelist: 
-      # - 161
-      # - 162
-      # - 82
-      # - 83
+      # - 5
+      # - 101
+      # - 102
+      # - 129
+      # - 130
+      # - 132
+      # - 133
+      # - 135
     slot_blacklist:
-      # - 506   # 日期黑名单
+      # - 1   # 日期黑名单
+      # - 2
+      # - 59  # 当前价格
+      # - 164
     
 
 
 model: 
   loss_type: cross_entropy
-  # l2_lambda : 0        # 如果fid出现多次，则只计算一次l2_loss
   # global_bias : True
   optimizer : 
     # type: AdagradOptimizer
@@ -47,7 +53,7 @@ model:
   mini_batch:
     batch_size: 1000
     epoch : 50000
-  # bias_nn_dims: [16, 8, 1]
+  bias_nn_dims: [16,1]
 # 调参经验： 
 #  1. learning rate (随着特征增加，原来适合的lr可能变得不适合)
 #      1e-2/1e-3: 太高了，直接学飞

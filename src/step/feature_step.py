@@ -48,7 +48,7 @@ class FeatureStep(Step):
         kline = context.get("source.kline")   
         feature = {
             # n天内成交额 
-            "%sd" %(d) : kline.reduce("amount", d, "ma") for d in [1, 3, 7, 14, 30, 360]
+            "%sd" %(d) : kline.reduce("amount", d, "ma") for d in [1, 3, 7, 14, 30, 90]
         }
         return feature
     
