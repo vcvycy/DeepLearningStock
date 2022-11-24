@@ -9,13 +9,13 @@ train_files:  # 只读第一个
   # - ../training_data/data.bin.20221122_1701
 #预处理instance: 处理label, 过滤fid等
 train_data:
-  validate_date : "20221001"      # 验证集: 没有label且时间在这个后面
+  validate_date : "20220901"      # 验证集: 没有label且时间在这个后面
   label:
     method : binarize
     args: 
       # key : next_14d_mean_price   #
       key : next_14d_close_price   #
-      threshold : 0.10   #
+      threshold : 0.0   #
   min_fid_occurrence : 0    # 每个fid最少出现几次，低于这个次数，程序直接退出报错
   debug:                 # debug 函数
     fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些
