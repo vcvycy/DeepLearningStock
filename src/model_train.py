@@ -237,7 +237,7 @@ class LRModel(Model):
             fid_val_pair = [(fid, fid2bias_val[fid]) for fid in fids]
             fid_val_pair.sort(key= lambda x : -x[1])
             return fid_val_pair[:k]
-        items = self.train_data.validate_items[:100000]
+        items = self.train_data.validate_items
         logging.info("开始预估股票: {}".format(len(items)).center(100, "="))
         # # tscode, date, TrainItem
         results = []   # ts_code, date, pred
@@ -272,6 +272,8 @@ class LRModel(Model):
             fids_label = np.mean([train_data.fid2avg_label.get(fid, 0) for fid in fids])
             logging.info("[Top_%s] %s %s 概率: %.4f fid_label_avg: %.4f label: %s raw_label: %.3f 正确率: %.2f" %(i, 
                         r["name"], r["date"], r["pred"], fids_label, r["label"], r["raw_label"], 1.0*correct_cnt/max(1, valid_cnt)))
+            if i >= 1000:
+                continue
             topk_fid_val = get_topk_val(fids, self.fid2bias_val)
             for fid, fid_bias in topk_fid_val:
                 raw, feature = train_data.fid2feature[fid]
@@ -284,7 +286,8 @@ if __name__ == "__main__":
     conf = yaml.safe_load(open("model_train.yaml", 'r') .read())
     files = conf.get("train_files")[:1]
     suffix = files[0].split(".")[-1] 
-    logging.basicConfig(filename="%s.%s" %(conf.get("log_file"), suffix), format = '%(levelname)s %(asctime)s %(message)s', level=logging.DEBUG)
+    log_file = "%s.%s" %(conf.get("log_file"), suffix)
+    logging.basicConfig(filename=log_file, format = '%(levelname)s %(asctime)s %(message)s', level=logging.DEBUG)
     # 载入instance
     logging.info("START")
     logging.info("conf: %s" %(conf)) 
@@ -296,4 +299,4 @@ if __name__ == "__main__":
     model = LRModel(conf.get("model"), train_data)
     model.train()
     model.validate()
-    print("执行: python parse_log.py  < ../log/model_train.log.20221122_1717 查看某一天具体正确率")
+    print("执行: python test_parse_log.py  < %s" %(log_file))
