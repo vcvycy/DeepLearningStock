@@ -31,15 +31,19 @@ def add_stats(date, label, raw_label, topk):
 def read():
     try:
         line = input("")
-        if "sum(bias-label)" in line:  # 表示分隔符
+        if "END" in line:  # 表示分隔符
             return "END"
         else:
             return line
-    except:
-        print("文件结束")
+    except Exception as e:
+        print("Exception: %s" %(e))
         exit(0)
 
-def main():
+def main(stock = None, show_date = False):
+    """
+      stock = None, 全部股票一起算，且分天看
+      stock != None : 看当前股票
+    """
     global tot 
     global corr 
     global raw_label_sum
@@ -47,6 +51,7 @@ def main():
     global outputs
     round = 0
     while True:
+        print('-' * 200)
         tot = {}
         corr = {}
         raw_label_sum = {}
@@ -57,7 +62,10 @@ def main():
             line = read()
             if line == "END":
                 break
-            
+            if stock is not None:
+                if stock not in line:
+                    continue
+                print(line)
             if "Top_" not in line:
                 continue
             topk = int(re.findall("Top_\d+", line)[0][4:]) 
@@ -68,15 +76,20 @@ def main():
             except:
                 continue
             assert raw_label < 5
-            add_stats(date, label, raw_label, topk) 
+            if show_date:
+                add_stats(date, label, raw_label, topk) 
             add_stats("ALL_TIME", label, raw_label, topk)
         dates = list(tot)
-        print(dates)
         dates.sort(key = lambda x : x)
         for date in dates: 
             print(("第%s次运行结果-%s" %(round,date)).center(100, "=")) 
             print(outputs[date])
-            print( "总数: %5d, 真实数量: %5d 正确率: %.2f%% 原始label均值: %.2f 平均排名: %.1f\n"  %(tot[date], 
+            print( "总数: %5d, 正例数量: %5d 正确率: %.2f%% 原始label均值: %.2f 平均排名: %.1f\n"  %(tot[date], 
                     corr[date], 100*corr[date]/tot[date], raw_label_sum[date] / tot[date],  rank[date]/tot[date]))
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', '--name', type=str, default=None) 
+    parser.add_argument('-d', '--date', action='store_true')
+    args = parser.parse_args()
+    main(args.name, show_date = args.date)

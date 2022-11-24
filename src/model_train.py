@@ -60,6 +60,8 @@ class Model():
         if loss_type == 'cross_entropy':
             pred = tf.sigmoid(logits, name = "pred")
             loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label, logits=logits)  
+            self.get_certrain_prob()
+            loss *= self.certainly
             loss = tf.reduce_sum(loss, name = "loss")
         else:
             raise Exception("unknown loss_type: %s" %(loss_type))
@@ -75,9 +77,10 @@ class Model():
         pass
     def dense_tower(self, x, dims):
         # 过dnn，最后一层不会走relu
+        l1_reg = None
         for dim in dims[:-1]: 
-            x = tf.layers.dense(x, dim, activation=tf.nn.relu)
-        return tf.layers.dense(x, dim, activation=None)
+            x = tf.layers.dense(x, dim, activation=tf.nn.relu, kernel_regularizer= l1_reg)
+        return tf.layers.dense(x, dims[-1], activation=None, kernel_regularizer= l1_reg)
     def _train(self):
         raise Exception("need override")
     def train(self):
@@ -94,10 +97,28 @@ class LRModel(Model):
         bias_num = self.fid_num
         # weight_initer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
         self.sparse_bias = tf.get_variable(name="bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
+        self.certain_bias = tf.get_variable(name="certain_bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
         logging.info("bias num: %s %s" %(bias_num, self.sparse_bias)) 
         return 
-    
 
+    def get_certrain_prob(self):
+        # 每个样本的确定性, 为0.5 ~1.5对loss加权， 确定性高的loss大，低的loss小
+        input = tf.gather(self.certain_bias, self.slot_bias_fid_index) 
+        logits = tf.reduce_sum(input, axis = 1)
+        self.emit("certainly/logits", logits)
+        certainly_raw= tf.sigmoid(logits) + 0.5
+        self.emit("certainly/raw_val", certainly_raw)
+        certainly = certainly_raw/ tf.reduce_mean(certainly_raw)
+        print("certainly: %s" %(certainly))
+        self.emit("certainly/norm_val", certainly)
+        # 总体确定性平均值应该为
+        self.certainly_raw = certainly_raw
+        self.certainly = certainly
+        # loss = tf.abs(tf.reduce_mean(certainly) - 1)
+        # self.emit("certainly/loss", loss)
+        # self.losses.append(loss)
+        return 
+        
     def _build_dense_nn(self):
         """
           建tensorflow: 这里为LR模型
@@ -124,7 +145,7 @@ class LRModel(Model):
             nn_out = tf.reduce_sum(self.dense_tower(bias_input, dims), axis = 1)
             self.emit("logit/bias_nn_out", nn_out)
             logits += nn_out
-            self.losses.append(tf.reduce_sum(nn_out) * 1e-5)
+            # self.losses.append(tf.reduce_sum(nn_out) * 1e-5)
             logging.info("[BuildDenseNN] towers: %s %s" %(dims, nn_out)) 
         self.emit("logit/sum", logits)
         logging.info("[BuildDenseNN]bias_input:%s logits: %s" %(bias_input, logits))
@@ -246,7 +267,7 @@ class LRModel(Model):
             batch = items[:batch_size]
             items = items[batch_size:]
             feed_dict = self._get_model_feed_dict(batch)
-            pred_val = self.sess.run(self.pred, feed_dict = feed_dict)
+            pred_val, certainly_val = self.sess.run([self.pred, self.certainly_raw], feed_dict = feed_dict)
             for i in range(len(batch)):
                 results.append({
                     "name" : batch[i].name,
@@ -254,6 +275,7 @@ class LRModel(Model):
                     "pred" : pred_val[i],
                     "item" : batch[i],
                     "label" : batch[i].label,
+                    "certainly" : certainly_val[i] -0.5,
                     "raw_label" : batch[i].raw_label if batch[i].raw_label is not None else 999
                 })
         #
@@ -270,8 +292,8 @@ class LRModel(Model):
             # 获取topk fid
             fids = r["item"].fids
             fids_label = np.mean([train_data.fid2avg_label.get(fid, 0) for fid in fids])
-            logging.info("[Top_%s] %s %s 概率: %.4f fid_label_avg: %.4f label: %s raw_label: %.3f 正确率: %.2f" %(i, 
-                        r["name"], r["date"], r["pred"], fids_label, r["label"], r["raw_label"], 1.0*correct_cnt/max(1, valid_cnt)))
+            logging.info("[Top_%s] %s %s 概率: %.4f fid_label_avg: %.4f label: %s raw_label: %.3f 确定性: %.3f 正确率: %.2f" %(i, 
+                        r["name"], r["date"], r["pred"], fids_label, r["label"], r["raw_label"], r["certainly"], 1.0*correct_cnt/max(1, valid_cnt)))
             if i >= 1000:
                 continue
             topk_fid_val = get_topk_val(fids, self.fid2bias_val)
@@ -299,4 +321,5 @@ if __name__ == "__main__":
     model = LRModel(conf.get("model"), train_data)
     model.train()
     model.validate()
+    logging.info("END")
     print("执行: python test_parse_log.py  < %s" %(log_file))
