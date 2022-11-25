@@ -64,7 +64,7 @@ class Kline():
     def __repr__(self):
         return self.__str__()
     def __str__(self):
-        rsp = "[KLine %s]\n    " %(self.name)
+        rsp = "[KLine %s-%s]\n    " %(self.name, self[0].date)
         if len(self) > 10:
             rsp += str(self.candles[:2]) + "..." + str(self.candles[-2:])
         else: 

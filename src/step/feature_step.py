@@ -133,6 +133,30 @@ class FeatureStep(Step):
             feature["pe"] = 10000 
         return feature 
 
+    def get_boll_feature(self, context):
+        """
+          布林通道相关特征
+        """
+        kline = context.get("source.kline")  
+        n = 20  # 20日线
+        m = 2   # 2倍标准差
+        ma = kline.reduce("close", n, "ma")
+        std = kline.reduce("close", n, 'std')    # 标准差(价差)
+        # 布林线
+        up  = ma + std*2
+        low = ma - std*2
+        pos = math.floor((kline[0].close - ma) / std) 
+        feature = {
+            "up" : up, 
+            "low" : low, 
+            "mid" : ma,
+            "std_rate" : std/kline[0].close,
+            "std_rate_200d" : kline.reduce("close", 200, 'std')/kline[0].close,
+            # 当前位置: 有5条线，分别是2/1/0/-1/-2倍的标准差, 把pos分成-3, -2, .. ,1, 2
+            "pos" : max(min(pos, 2), -3)
+        }
+        return feature 
+
     def _execute(self, context):
         """
           原始特征抽取
@@ -146,7 +170,8 @@ class FeatureStep(Step):
             "atl" : self.get_all_time_low_feature(context),
             "price" : self.get_price_feature(context),
             "median_price" : self.get_median_price(context),
-            "basic" : self.get_basic_feature(context)
+            "basic" : self.get_basic_feature(context),
+            "boll" : self.get_boll_feature(context)
         } 
         context.set(self.out_key, feature)
         return 

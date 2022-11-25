@@ -352,29 +352,25 @@ feature_columns:
       min : -0.1
       max : 0.1
   
-  # - name : median_price_30d         # 过去N天的中位数买入价
-  #   depends : median_price.30d,price.close
-  #   slot : 162
-  #   method : ChangeRateDiscrete 
-  #   args:   
-  #     step: 0.03
-  #     min : -0.1
-  #     max : 0.1
-
-  # - name : median_price_60d         # 过去N天的中位数买入价
-  #   depends : median_price.60d,price.close
-  #   slot : 163
-  #   method : ChangeRateDiscrete 
-  #   args:   
-  #     step: 0.03
-  #     min : -0.15
-  #     max : 0.15
   
-  # - name : median_price_180d         # 过去N天的中位数买入价
-  #   depends : median_price.180d,price.close
-  #   slot : 164
-  #   method : ChangeRateDiscrete 
-  #   args:   
-  #     step: 0.03
-  #     min : -0.15
-  #     max : 0.15
+  # 200 ~ 219 布林通道
+  - name : boll_std         # 布林通道标准差(布林口大小)
+    depends : boll.std_rate
+    slot : 200 
+    method : LinearDiscrete  
+    args:   
+      step: 0.015
+      max: 0.12
+
+  - name : boll_std_200d         # 价格标准差200天(衡量整个股票的波动)
+    depends : boll.std_rate_200d
+    slot : 201
+    method : LinearDiscrete  
+    args:   
+      step: 0.03
+      max: 0.25
+
+  - name : boll_position         # 当前价格位于通道哪个位置
+    depends : boll.pos
+    slot : 202
+    method : BaseMethod
