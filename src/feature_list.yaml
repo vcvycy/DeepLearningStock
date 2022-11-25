@@ -24,7 +24,7 @@ feature_columns:
     slot : 2
     args:   
       step: 5
-      max: 70
+      max: 35
   
   - name : turnover_f # 换手(流通股)
     depends : basic.turnover_rate_f 
@@ -32,7 +32,7 @@ feature_columns:
     slot : 3
     args:   
       step: 5
-      max: 70
+      max: 50
 
   # 总市值(单位万)
   - name : total_mv
@@ -75,7 +75,7 @@ feature_columns:
     args:   
       start: 0
       step: 0.05
-      min: -0.4
+      min: -0.3
       max: 0.6
 
 
@@ -85,8 +85,8 @@ feature_columns:
     slot : 53
     args:   
       step: 0.1
-      min : -0.6
-      max: 1.4
+      min : -0.45
+      max: 1.05
 
   - name : rise_180d         # 最近N天涨跌
     depends : recent_rise.180d
@@ -159,7 +159,7 @@ feature_columns:
     slot : 65
     args:   
       step: 0.05
-      min : -0.4
+      min : -0.33
       max : 0
   
 
@@ -170,7 +170,7 @@ feature_columns:
     method : LogDiscrete 
     args:   
       base: 2
-      max : 200
+      max : 300
 
   - name :   last_3d_ath       # 过去n天的最高点，是往前多少天的最高点
     depends : ath.3d
@@ -178,14 +178,14 @@ feature_columns:
     method : LogDiscrete 
     args:   
       base: 2
-      max : 200
+      max : 300
   - name :   last_7d_ath       # 过去n天的最高点，是往前多少天的最高点
     depends : ath.7d
     slot : 82
     method : LogDiscrete 
     args:   
       base: 2
-      max : 200
+      max : 300
   - name :   last_14d_ath       # 过去n天的最高点，是往前多少天的最高点
     depends : ath.14d
     slot : 83
@@ -209,7 +209,7 @@ feature_columns:
     method : LogDiscrete 
     args:   
       base: 2
-      max : 200
+      max : 300
 
   - name :   last_7d_atl       # 过去n天的最低，是往前多少天的最低 
     depends : atl.7d
@@ -217,7 +217,7 @@ feature_columns:
     method : LogDiscrete 
     args:   
       base: 2
-      max : 200
+      max : 400
 
   - name :   last_14d_atl       # 过去n天的最低，是往前多少天的最低 
     depends : atl.14d
@@ -225,7 +225,7 @@ feature_columns:
     method : LogDiscrete 
     args:   
       base: 2
-      max : 200
+      max : 400
 
   # 成交额相关: slot 100~129
   - name : amount_360d         # 最近360天平均成交额
@@ -241,7 +241,7 @@ feature_columns:
     slot : 101
     method : ChangeRateDiscrete 
     args:   
-      step: 0.4            
+      step: 0.5            
       max : 3
 
   - name : amount_change_3d         # 中短期成交量变化: 3d vs 30d
@@ -294,25 +294,25 @@ feature_columns:
     slot : 132
     method : ChangeRateDiscrete 
     args:   
-      step: 0.1
-      min : -0.4
-      max : 0.4
+      step: 0.06
+      min : -0.3
+      max : 0.3
 
   - name : price_change_30d_ma         # 相比30日均线的位置
     depends : price.close, price.close_ma_30d
     slot : 133
     method : ChangeRateDiscrete 
     args:   
-      step: 0.1
-      min : -0.4
-      max : 0.5
+      step: 0.06
+      min : -0.3
+      max : 0.4
   
   - name : price_change_60d_ma         # 相比60日均线的位置
     depends : price.close, price.close_ma_60d
     slot : 134
     method : ChangeRateDiscrete 
     args:   
-      step: 0.1
+      step: 0.06
       min : -0.4
       max : 0.5
 
@@ -323,7 +323,7 @@ feature_columns:
     args:   
       step: 0.1
       min : -0.5
-      max : 0.5
+      max : 0.6
   
   - name : above_200d_ma_days         # 200日均线上持续运行了多少天
     depends : price.200d_ma_above_date, time.date
