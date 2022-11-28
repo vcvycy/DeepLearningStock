@@ -4,12 +4,12 @@ train_files:  # 只读第一个
   # 全量股票
   # - ../training_data/data.bin.20221123_2106
   # 1000个股票, 365天数据
-  - ../training_data/data.bin.20221124_1704
+  - ../training_data/data.bin.20221128_1646
   # 测试
-  # - ../training_data/data.bin.20221122_1701
+  # - ../training_data/data.bin.20221128_1441
 #预处理instance: 处理label, 过滤fid等
 train_data:
-  validate_date : "20221001"      # 验证集: 没有label且时间在这个后面
+  validate_date : "20220930"      # 验证集: 没有label且时间在这个后面
   label:
     method : binarize
     args: 
@@ -33,10 +33,10 @@ train_data:
       # - 133
       # - 135
     slot_blacklist:
-      # - 1   # 日期黑名单
-      # - 2
-      # - 59  # 当前价格
-      # - 164
+      - 1
+      - 2
+      - 3
+      - 4
     
 
 

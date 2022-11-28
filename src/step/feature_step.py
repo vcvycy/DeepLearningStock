@@ -170,7 +170,7 @@ class FeatureStep(Step):
             "atl" : self.get_all_time_low_feature(context),
             "price" : self.get_price_feature(context),
             "median_price" : self.get_median_price(context),
-            "basic" : self.get_basic_feature(context),
+            "basic" : self.get_basic_feature(context),# bug, 如PE数据出现穿越
             "boll" : self.get_boll_feature(context)
         } 
         context.set(self.out_key, feature)

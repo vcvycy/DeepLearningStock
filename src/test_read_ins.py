@@ -34,6 +34,11 @@ if __name__ == "__main__":
                         contain += 1
             if contain < len(contain_fids):
                 continue
+        slots = set([])
+        for fc in ins.feature:
+            for fid in fc.fids:
+                slots.add(fid>>54)
+        print("slots: %s(%s)" %(len(slots), slots))
         print('-'* 50 + str(i+1) + '-'*50)
         print(ins)
         input("press any key to continue...")

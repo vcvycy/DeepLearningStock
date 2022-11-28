@@ -255,7 +255,7 @@ class LRModel(Model):
         """
         def get_topk_val(fids, fid2bias_val, k = 10):
             # 获取fid最高的K个
-            fid_val_pair = [(fid, fid2bias_val[fid]) for fid in fids]
+            fid_val_pair = [(fid, fid2bias_val.get(fid, -1)) for fid in fids]
             fid_val_pair.sort(key= lambda x : -x[1])
             return fid_val_pair[:k]
         items = self.train_data.validate_items
@@ -275,7 +275,7 @@ class LRModel(Model):
                     "pred" : pred_val[i],
                     "item" : batch[i],
                     "label" : batch[i].label,
-                    "certainly" : certainly_val[i] -0.5,
+                    "certainly" : certainly_val[i],
                     "raw_label" : batch[i].raw_label if batch[i].raw_label is not None else 999
                 })
         #
@@ -322,4 +322,4 @@ if __name__ == "__main__":
     model.train()
     model.validate()
     logging.info("END")
-    print("执行: python test_parse_log.py -c 0.8 < %s" %(log_file))
+    print(" python test_parse_log.py -c 0.8 < %s" %(log_file))

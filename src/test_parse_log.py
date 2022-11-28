@@ -78,8 +78,8 @@ def main(stock = None, show_date = False, certainly_threshold = 0):
             if "Top_" not in line:
                 continue
             topk = int(re.findall("Top_\d+", line)[0][4:]) 
-            date = re.findall("2022[0-9]{4,4}",line )[0]
             try:
+                date = re.findall("20221[0-9]{3,3}",line )[0]
                 label = int(line.split(" label: ")[1][0])
                 raw_label = float(line.split("raw_label: ")[1].split(" ")[0])
             except:

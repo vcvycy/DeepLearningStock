@@ -24,10 +24,9 @@ class TushareSource(MultiThreadSource):
         self.sample_min_train_days = conf.get("sample_min_train_days", 10)  #
         self.whitelist = conf.get("whitelist")
         # 获取所有股票数据
-        self.all_stocks = TushareApi.get_all_stocks(self.client)
-        self.stock_size = self.all_stocks.shape[0]
+        self.all_stocks = TushareApi.get_all_stocks()
+        self.stock_size = len(self.all_stocks)
         logging.error("TushareSource : stock size: %s" %(self.stock_size))
-        logging.error(self.all_stocks)
         self.total_context = 0 
         
         # 
@@ -38,8 +37,9 @@ class TushareSource(MultiThreadSource):
         # 多线程入口函数
         try:
             start_date = self.conf.get("start_date")
-            ts_code = self.all_stocks.at[stock_idx, "ts_code"]
-            kline = TushareApi.get_kline_by_ts_code(self.client, ts_code, start_date)  
+            end_date = self.conf.get("end_date", "")
+            ts_code = self.all_stocks[stock_idx]["ts_code"]
+            kline = TushareApi.get_kline_by_ts_code(ts_code, start_date, end_date)  
             ctx_num = 0  
             # 至少有lable_days天作为Label，所以这几天不采样训练数据
             for idx in range(len(kline)):
@@ -53,7 +53,7 @@ class TushareSource(MultiThreadSource):
                 # stock pb数据  
                 context.set("source.kline", Kline(ts_code = kline.ts_code, candles = kline.candles[idx:]))
                 context.set("source.kline_label", Kline(ts_code = kline.ts_code, candles = kline.candles[:idx]))
-                context.set("source.name", self.all_stocks.at[stock_idx, "name"])
+                context.set("source.name", self.all_stocks[stock_idx]["name"])
                 context.set("source.time_interval", TimeInterval.Day)  # 日线图
                 context.set("source.ts_code",  ts_code)
                 context.set("source.train_date", candle.date)
@@ -67,11 +67,16 @@ class TushareSource(MultiThreadSource):
 
     def start_multi_thread(self):
         for i in range(self.stock_size):
+            name = self.all_stocks[i]["name"]
             if self.whitelist is not None:
-                if self.whitelist not in self.all_stocks.at[i, "name"] and self.whitelist not in self.all_stocks.at[i, "ts_code"] :
+                if self.whitelist not in name and self.whitelist not in self.all_stocks[i]["ts_code"]:
                     continue                 
-            if self.conf.get("skip_st") == True and 'ST' in self.all_stocks.at[i, "name"]:
-                print("Filter ST Stock: %s" %(self.all_stocks.at[i, "name"]))
+            # 是否过滤ST
+            if self.conf.get("skip_st") == True and 'ST' in name:
+                continue
+            # 是否过滤etf
+            if not self.conf.get("enable_etf")  and self.all_stocks[i]["category"] == "etf":
+                print("ETF: %s被过滤" %(self.all_stocks[i]))
                 continue
             self.add_thread(TushareSource.gen_contexts_thread_fun, i) 
         return 

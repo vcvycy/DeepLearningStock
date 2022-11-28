@@ -5,6 +5,7 @@ sys.path.append("..")
 from common.utils import *
 from common.candle import Candle, Kline
 from common.stock_pb2 import *
+import time
 def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切断)
     def wrapper(*args, **kwargs):
         retry = 3
@@ -22,6 +23,7 @@ client = ts.pro_api("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f")
 # Tushare的api封装
 class TushareApi:
     __ts_code2name = {}
+    __ts_code2type = {}
     ts_code2basic = {}
     @staticmethod
     def init_client(api_key):
@@ -33,9 +35,23 @@ class TushareApi:
             TushareApi.get_all_stocks()
         return TushareApi.__ts_code2name[ts_code]
     @staticmethod
-    def get_all_stocks(client, to_dict = False):
+    def get_all_stocks():
+        global client
         global __ts_code2name
-        # 拉取数据
+        data = []
+        # 基金etf/lof
+        df = client.fund_basic(market='E', status='L') 
+        for idx,value in df.iterrows():
+            if value["list_date"] is not None and  value["list_date"] > "20220101":   # 基金只去2022前发行的，有足够的数据训练
+                continue
+            data.append({
+                "ts_code" : value["ts_code"],
+                "name" : value["name"],
+                "category" : "etf"
+            })
+            TushareApi.__ts_code2type[value["ts_code"]] = "etf"
+        print("基金总数 %s, 过滤后剩下: %s" %(df.shape[0], len(data)))
+        # 拉取股票数据
         df = client.stock_basic(**{
             "ts_code": "",
             "name": "",
@@ -55,24 +71,35 @@ class TushareApi:
             "list_date"
         ])
         for idx,value in df.iterrows():
-            TushareApi.__ts_code2name[value["ts_code"]] = value["name"]
-        if to_dict:
-            return [value.to_dict() for idx,value in df.iterrows()]
-        else:
-            return df
+            data.append({
+                "ts_code" : value["ts_code"],
+                "name" : value["name"],
+                "category" : "stock"
+            })
+            TushareApi.__ts_code2type[value["ts_code"]] = "stock"
+        return data 
     
     @staticmethod
     @TushareDecorator
-    def get_kline_by_ts_code(client, ts_code, start_date = "", end_date = ""):
-        # 从tushare获取k线图
-        kline_df = client.daily(**{
-            "ts_code": ts_code,
-            "trade_date": "","start_date": start_date,
-            "end_date": end_date,"offset": "", "limit": ""
-        }, fields=["ts_code","trade_date","open",
-            "high","low","close","pre_close","change",
-            "pct_chg","vol","amount"
-        ])
+    def get_kline_by_ts_code(ts_code, start_date = "", end_date = ""):
+        global client
+        # 从tushare获取k线图: 未复权
+        # 前复权
+        if TushareApi.__ts_code2type[ts_code] == "stock":
+            kline_df = client.daily(**{
+                "ts_code": ts_code,
+                "trade_date": "","start_date": start_date,
+                "end_date": end_date,"offset": "", "limit": ""
+            }, fields=["ts_code","trade_date","open",
+                "high","low","close","pre_close","change",
+                "pct_chg","vol","amount"
+            ])
+            # kline_df = ts.pro_bar(ts_code=ts_code, adj='qfq', start_date=start_date, end_date=end_date)
+        elif TushareApi.__ts_code2type[ts_code] == "etf":
+            time.sleep(1)
+            kline_df = client.fund_daily(ts_code=ts_code, start_date=start_date, end_date=end_date)
+        else:
+            raise Exception("unknow ts_code: %s" %(ts_code))
         kline = Kline(ts_code = ts_code) 
         for i in range(kline_df.shape[0]):
             c = Candle()
@@ -91,6 +118,7 @@ class TushareApi:
                 candle_attr = df2candle_attr[df_attr]
                 setattr(c, candle_attr, kline_df.at[i, df_attr])
             kline.add(c) 
+        time.sleep(0.1)
         return kline 
     @staticmethod
     @TushareDecorator
@@ -111,43 +139,13 @@ class TushareApi:
                 TushareApi.ts_code2basic[ts_code] = value.to_dict()
                 break
         return TushareApi.ts_code2basic[ts_code]
-    # @staticmethod
-    # @TushareDecorator
-    # def get_kline_by_ts_code_v2(client, ts_code, start_date = "", end_date = ""):
-if __name__ == "__main__":
-    # print(ts.pro_bar(ts_code='688699.SH', adj='qfq', start_date='20220809', end_date='20221011'))
-    client = TushareApi.init_client("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f")
-    # print(TushareApi.get_all_stocks(client))
-    # print(len([s for s in TushareApi.get_all_stocks(client, to_dict = True) if s["ts_code"][0] == '8']))
 
-    basic = TushareApi.get_ts_code2basic("000506.SZ")
-    print(basic)
-
-    df = client.fund_basic(market='E')
-    
-    for x in [value.to_dict() for idx,value in df.iterrows()]:
-        if "中概" in x["name"]:
-            print(x)
-    # for stock in  TushareApi.get_all_stocks(client, to_dict = True):
-    #     if stock["name"] == "明微电子":
-    #         print(stock)
-    #         break
-    # # print(TushareApi.get_name("688737.SH"))
-    # kline = TushareApi.get_kline_by_ts_code(client, "688699.SH", end_date="20221011")
-    # kline = TushareApi.get_kline_by_ts_code(client, "000007.SZ", end_date="")
-    # print(len(kline))
-    # print(kline.median_price_estimator(14))
-    # for c in kline:
-    #     # if c.date == "20221011":
-    #     print(c)
-    #     break
-    # print(kline.get_rise(30))
-    # print(kline[0].close)
-    # print(kline[30].pre_close)
-    # kline.draw()
-    # print(kline.reduce("high", 360, "max"))
-    # print(kline.name)
-    # print(kline.ts_code)
-    # for i in range(360):
-    #     c = kline[i]
-    #     print("%s %s" %(c.date, c.high))
+if __name__ == "__main__": 
+    client = TushareApi.init_client("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f") 
+    df = client.fund_basic(market='E') 
+    TushareApi.get_all_stocks()
+    for idx,value in df.iterrows():
+        if "中概" in value["name"]:
+            print(value)
+    kline = TushareApi.get_kline_by_ts_code("513050.SH", start_date="", end_date = '20221212')
+    kline.draw() 

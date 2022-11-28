@@ -129,6 +129,8 @@ class Kline():
         data = []    # 保存买入价 + 买入量 
         vol_total = 0
         for i in range(days):
+            if i >= len(self):
+                break
             c = self[i]
             price = (c.high + c.low + c.close + c.open) / 4
             data.append((price, c.vol))

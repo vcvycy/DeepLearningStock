@@ -4,9 +4,10 @@ from common.stock_pb2 import *
 import logging
 import yaml
 import random
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import logging
 import numpy as np
+import math
 def read_instances(files):
     if not isinstance(files, list):
         files = [files]
@@ -118,12 +119,13 @@ class TrainData():
 
         label_conf = self.conf.get("label")
         args = label_conf.get("args")
-        try:
+        key = args.get("key") 
+        if key in ins.label: 
             label = None
             if label_conf.get("method") == "binarize":
                 label = binarize(ins, args) 
-        except:
-            pass
+        else:
+            return None, None
         return label, ins.label.get(args.get("key"))
 
     def __init_train_items(self):
