@@ -322,4 +322,4 @@ if __name__ == "__main__":
     model.train()
     model.validate()
     logging.info("END")
-    print(" python test_parse_log.py -c 0.8 < %s" %(log_file))
+    print(" python test_parse_log.py  < %s" %(log_file))

@@ -48,6 +48,7 @@ def read_file_with_size(f, PBClass = None):
     return data_size, data
 
 def enum_instance(path):
+    from common.stock_pb2 import Instance
     f = open(path, "rb")
     while True:
         size, data = read_file_with_size(f, Instance)
@@ -66,7 +67,6 @@ def timestamp2str(ts, format = "%Y-%m-%d %H:%M:%S"):
 
 
 if __name__ == "__main__":
-    from stock_pb2 import * 
     def save_ts_code_ins_to(ts_code):
         f = open("debug_%s.data" %(ts_code), "wb")
         for ins in enum_instance("../../training_data/data.bin.20221123_2106"):

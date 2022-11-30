@@ -4,9 +4,10 @@ train_files:  # 只读第一个
   # 全量股票
   # - ../training_data/data.bin.20221123_2106
   # 1000个股票, 365天数据
-  - ../training_data/data.bin.20221128_1646
+  # - ../training_data/data.bin.20221128_1646
   # 测试
-  # - ../training_data/data.bin.20221128_1441
+  # - ../training_data/data.bin.20221129_1633  # fix pe/turnover
+  - ../training_data/data.bin.20221130_1802
 #预处理instance: 处理label, 过滤fid等
 train_data:
   validate_date : "20220930"      # 验证集: 没有label且时间在这个后面
@@ -33,10 +34,10 @@ train_data:
       # - 133
       # - 135
     slot_blacklist:
-      - 1
-      - 2
-      - 3
-      - 4
+      # - 1
+      # - 2
+      # - 3
+      # - 4
     
 
 

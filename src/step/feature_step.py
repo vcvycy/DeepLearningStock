@@ -125,12 +125,20 @@ class FeatureStep(Step):
         }  
         return feature
     def get_basic_feature(self, context):
-        # 获取用户过去n天持仓价格
+        # 基础信息
         kline = context.get("source.kline")  
         #例子 {'ts_code': '600519.SH', 'trade_date': '20221122', 'turnover_rate': 0.238, 'volume_ratio': None, 'pe': 36.8753, 'pb': 9.3585}}
-        feature = TushareApi.get_ts_code2basic(kline.ts_code)
-        if math.isnan(feature["pe"]):
-            feature["pe"] = 10000 
+        # feature = TushareApi.get_ts_code2basic(kline.ts_code)
+        # if math.isnan(feature["pe"]):
+        #     feature["pe"] = 10000 
+        feature = {
+            "pe" : 10000 if kline[0].pe is None or math.isnan(kline[0].pe) else kline[0].pe,    # 市盈率
+            "turnover_rate" : kline[0].turnover_rate,      # 换手率(总股本)
+            "turnover_rate_f" : kline[0].turnover_rate_f,  # 换手率(流通股本)
+            "turnover_rate_f_7d" : kline.reduce("turnover_rate_f", 7, "ma"),  # 换手率(流通股本)
+            "total_mv" : kline[0].total_mv,  
+        }
+        # print("%s : %s" %(kline[0].date, feature))
         return feature 
 
     def get_boll_feature(self, context):

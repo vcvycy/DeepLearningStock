@@ -22,6 +22,7 @@ class WriteInstanceStep(Step):
         return 
     
     def __del__(self):
+        print("write_instance最后写入")
         self.write_instance()
         return 
     

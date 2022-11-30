@@ -10,7 +10,7 @@ import logging
 
 class Candle(): 
     CommonAttr = [
-        "time", "open", "high", "low", "close", "amount", "vol", "turnover", "pre_close", "date"
+        "time", "open", "high", "low", "close", "amount", "vol", "turnover_rate", "turnover_rate_f", "pre_close", "pe", "date", 'total_mv'
     ]
     def __init__(self):
         # super(Candle, self).__init__()

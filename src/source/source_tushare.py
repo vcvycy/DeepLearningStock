@@ -76,7 +76,7 @@ class TushareSource(MultiThreadSource):
                 continue
             # 是否过滤etf
             if not self.conf.get("enable_etf")  and self.all_stocks[i]["category"] == "etf":
-                print("ETF: %s被过滤" %(self.all_stocks[i]))
+                print("disable_etf: ETF: %s被过滤" %(self.all_stocks[i]))
                 continue
             self.add_thread(TushareSource.gen_contexts_thread_fun, i) 
         return 

@@ -1,3 +1,15 @@
+# 11.28
+去掉slot 1   : 8% vs 4%
+去掉slot 2/3 : 6% vs 4%
+去掉slot 1/2/3: 7% vs 4%
+去掉1/2/3/4  :  4%
+去掉4        : 10% vs 4%
+
+# 11.29
+去掉slot 1/2/3: 6% vs 4%
+去掉1/2/3/4  :  2%
+去掉4:     %5 vs %4
+
 # DeepLearningStock
 ## 代码架构
 * update.sh            # 更新项目依赖, 编译Protobuf文件

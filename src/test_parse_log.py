@@ -69,6 +69,8 @@ def main(stock = None, show_date = False, certainly_threshold = 0):
         certain_filter_cnt = 0
         while True: 
             line = read()
+            if "conf" in line:
+                print(line)
             if line == "END":
                 break
             if stock is not None:

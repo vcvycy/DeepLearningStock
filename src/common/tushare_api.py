@@ -70,6 +70,7 @@ class TushareApi:
             "market",
             "list_date"
         ])
+        # print(df)
         for idx,value in df.iterrows():
             data.append({
                 "ts_code" : value["ts_code"],
@@ -82,7 +83,31 @@ class TushareApi:
     @staticmethod
     @TushareDecorator
     def get_kline_by_ts_code(ts_code, start_date = "", end_date = ""):
+        def update_kline(kline, kline_df, basic_df = None):
+            for i in range(kline_df.shape[0]):
+                c = Candle()
+                df2candle_attr = {    # dataframe的名字映射到canlde的名字中
+                    "high" : "high",
+                    "low" : "low", 
+                    "open" : "open", 
+                    "close" : "close", 
+                    "pre_close" : "pre_close", 
+                    "high" : "high", 
+                    "trade_date" : "date",
+                    "vol" : "vol",
+                    "amount" : "amount"
+                }
+                for df_attr in df2candle_attr:
+                    candle_attr = df2candle_attr[df_attr]
+                    setattr(c, candle_attr, kline_df.at[i, df_attr]) 
+                if basic_df is not None:
+                    assert basic_df.at[i, "trade_date"] == kline_df.at[i, "trade_date"]
+                    basic_attr = "turnover_rate,turnover_rate_f,total_mv,circ_mv,volume_ratio,pe,pb".split(",")
+                    for k in basic_attr: 
+                        setattr(c, k, basic_df.at[i, k]) 
+                kline.add(c) 
         global client
+        kline = Kline(ts_code = ts_code) 
         # 从tushare获取k线图: 未复权
         # 前复权
         if TushareApi.__ts_code2type[ts_code] == "stock":
@@ -94,32 +119,24 @@ class TushareApi:
                 "high","low","close","pre_close","change",
                 "pct_chg","vol","amount"
             ])
-            # kline_df = ts.pro_bar(ts_code=ts_code, adj='qfq', start_date=start_date, end_date=end_date)
+            # kline_df = ts.pro_bar(ts_code=ts_code, adj='qfq', start_date=start_date, end_date=end_date) #前复权
+            fields = 'ts_code,trade_date,turnover_rate,turnover_rate_f,total_mv,circ_mv,volume_ratio,pe,pb'
+            basic_df = client.query('daily_basic', ts_code=ts_code, start_date=start_date, end_date=end_date, fields=fields)
+            update_kline(kline, kline_df, basic_df)
+            # 换手率等数据 
         elif TushareApi.__ts_code2type[ts_code] == "etf":
             time.sleep(1)
             kline_df = client.fund_daily(ts_code=ts_code, start_date=start_date, end_date=end_date)
         else:
             raise Exception("unknow ts_code: %s" %(ts_code))
-        kline = Kline(ts_code = ts_code) 
-        for i in range(kline_df.shape[0]):
-            c = Candle()
-            df2candle_attr = {    # dataframe的名字映射到canlde的名字中
-                "high" : "high",
-                "low" : "low", 
-                "open" : "open", 
-                "close" : "close", 
-                "pre_close" : "pre_close", 
-                "high" : "high", 
-                "trade_date" : "date",
-                "vol" : "vol",
-                "amount" : "amount"
-            }
-            for df_attr in df2candle_attr:
-                candle_attr = df2candle_attr[df_attr]
-                setattr(c, candle_attr, kline_df.at[i, df_attr])
-            kline.add(c) 
-        time.sleep(0.1)
         return kline 
+    @staticmethod
+    @TushareDecorator
+    def get_basic_by_ts_code(ts_code, start_date = "", end_date = ""):
+        global client
+        fields = 'ts_code,trade_date,turnover_rate,turnover_rate_f,total_mv,circ_mv,volume_ratio,pe,pb'
+        df = client.query('daily_basic', ts_code=ts_code, start_date=start_date, end_date=end_date, fields=fields)
+        return df
     @staticmethod
     @TushareDecorator
     def get_ts_code2basic(ts_code, timestamp = time.time()):
@@ -139,13 +156,19 @@ class TushareApi:
                 TushareApi.ts_code2basic[ts_code] = value.to_dict()
                 break
         return TushareApi.ts_code2basic[ts_code]
-
-if __name__ == "__main__": 
-    client = TushareApi.init_client("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f") 
-    df = client.fund_basic(market='E') 
+def init():
     TushareApi.get_all_stocks()
-    for idx,value in df.iterrows():
-        if "中概" in value["name"]:
-            print(value)
-    kline = TushareApi.get_kline_by_ts_code("513050.SH", start_date="", end_date = '20221212')
-    kline.draw() 
+init()
+if __name__ == "__main__": 
+    # client = TushareApi.init_client("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f") 
+    # client.fund_basic(market='E') 
+    TushareApi.get_all_stocks()
+    # TushareApi.get_basic_by_ts_code("000001.SZ", start_date= "20200101")
+    # TushareApi.get_basic_by_ts_code("513050.SH", start_date= "20200101")
+    kline = TushareApi.get_kline_by_ts_code("873169.BJ", start_date= "", end_date="")
+    print(kline[0]) 
+    # for idx,value in df.iterrows():
+    #     if "中概" in value["name"]:
+    #         print(value)
+    # kline = TushareApi.get_kline_by_ts_code("513050.SH", start_date="", end_date = '20221212')
+    # kline.draw() 
