@@ -111,15 +111,15 @@ class TushareApi:
         # 从tushare获取k线图: 未复权
         # 前复权
         if TushareApi.__ts_code2type[ts_code] == "stock":
-            kline_df = client.daily(**{
-                "ts_code": ts_code,
-                "trade_date": "","start_date": start_date,
-                "end_date": end_date,"offset": "", "limit": ""
-            }, fields=["ts_code","trade_date","open",
-                "high","low","close","pre_close","change",
-                "pct_chg","vol","amount"
-            ])
-            # kline_df = ts.pro_bar(ts_code=ts_code, adj='qfq', start_date=start_date, end_date=end_date) #前复权
+            # kline_df = client.daily(**{
+            #     "ts_code": ts_code,
+            #     "trade_date": "","start_date": start_date,
+            #     "end_date": end_date,"offset": "", "limit": ""
+            # }, fields=["ts_code","trade_date","open",
+            #     "high","low","close","pre_close","change",
+            #     "pct_chg","vol","amount"
+            # ])
+            kline_df = ts.pro_bar(ts_code=ts_code, adj='qfq', start_date=start_date, end_date=end_date) #前复权
             fields = 'ts_code,trade_date,turnover_rate,turnover_rate_f,total_mv,circ_mv,volume_ratio,pe,pb'
             basic_df = client.query('daily_basic', ts_code=ts_code, start_date=start_date, end_date=end_date, fields=fields)
             update_kline(kline, kline_df, basic_df)
@@ -165,8 +165,10 @@ if __name__ == "__main__":
     TushareApi.get_all_stocks()
     # TushareApi.get_basic_by_ts_code("000001.SZ", start_date= "20200101")
     # TushareApi.get_basic_by_ts_code("513050.SH", start_date= "20200101")
-    kline = TushareApi.get_kline_by_ts_code("873169.BJ", start_date= "", end_date="")
-    print(kline[0]) 
+    kline = TushareApi.get_kline_by_ts_code("000096.SZ", start_date= "20220810", end_date="20221111")
+    for i in kline:
+        print(i)
+    kline.draw()
     # for idx,value in df.iterrows():
     #     if "中概" in value["name"]:
     #         print(value)
