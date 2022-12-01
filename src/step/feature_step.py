@@ -135,6 +135,7 @@ class FeatureStep(Step):
             "pe" : 10000 if kline[0].pe is None or math.isnan(kline[0].pe) else kline[0].pe,    # 市盈率
             "turnover_rate" : kline[0].turnover_rate,      # 换手率(总股本)
             "turnover_rate_f" : kline[0].turnover_rate_f,  # 换手率(流通股本)
+            "turnover_rate_f_3d" : kline.reduce("turnover_rate_f", 3, "ma"),  # 换手率(流通股本)
             "turnover_rate_f_7d" : kline.reduce("turnover_rate_f", 7, "ma"),  # 换手率(流通股本)
             "total_mv" : kline[0].total_mv,  
         }

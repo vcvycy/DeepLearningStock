@@ -43,6 +43,7 @@ class TrainItem():
             返回: 长度为n的数组, 每个位置表示，当前slot，对应的fid_index
         """
         ret = [0] * len(slot2index)
+        assert len(self.fids) == len(slot2index), "fids数量和slot不匹配: %s != %s" %(len(fids), len(slot2index))
         for fid in self.fids:
             fid_index = fid2index[fid]
             slot = fid >>54
@@ -228,4 +229,10 @@ class TrainData():
           从train_items随机采样batch_size个数据(这里可重复采样)
         """
         mini_batch = random.choices(self.train_items, k = batch_size)
-        return mini_batch
+        # return mini_batch
+        b = []
+        for item in mini_batch:
+            if item.raw_label < -0.05:
+                b.append(item) 
+            b.append(item)
+        return b

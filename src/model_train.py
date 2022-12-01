@@ -221,8 +221,8 @@ class LRModel(Model):
                 if i % 100 == 0:
                     label_avg = np.mean(feed_dict[self.label])
                     pred_avg = np.mean(pred_val)
-                    logging.info("[train-epoch:%5s] loss: %.2f, label: %.2f pred: %.2f " %(i+1, 
-                                        loss_val, label_avg, pred_avg))
+                    logging.info("[train-epoch:%5s] loss: %.2f, label: %.2f pred: %.2f batch_size: %s" %(i+1, 
+                                        loss_val, label_avg, pred_avg, len(mini_batch)))
             except KeyboardInterrupt:
                 logging.info("手动退出训练过程")
                 break
