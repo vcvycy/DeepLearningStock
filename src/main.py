@@ -89,7 +89,7 @@ class Engine():
                 step.execute(context)
             self.context_num += 1
             process_context += 1
-            if self.context_num % 100 == 0:
+            if self.context_num % 1000 == 0:
                 # print(context)
                 logging.error("[thread-%s] context_num: %s %s cur source: %s" %(thread_idx, self.context_num, 
                                 context.id, self.sources[0].get_progress()))

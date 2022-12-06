@@ -127,6 +127,17 @@ class FeatureStep(Step):
     def get_basic_feature(self, context):
         # 基础信息
         kline = context.get("source.kline")  
+        if TushareApi.is_etf(kline.ts_code): 
+            feature = {
+                "pe" : "EMPTY",
+                "turnover_rate" :  "EMPTY",
+                "turnover_rate_f" : "EMPTY",
+                "turnover_rate_f_3d" : "EMPTY",
+                "turnover_rate_f_7d" : "EMPTY",
+                "turnover_rate_f_30d" : "EMPTY",
+                "total_mv" :  "EMPTY"
+            }
+            return feature
         #例子 {'ts_code': '600519.SH', 'trade_date': '20221122', 'turnover_rate': 0.238, 'volume_ratio': None, 'pe': 36.8753, 'pb': 9.3585}}
         # feature = TushareApi.get_ts_code2basic(kline.ts_code)
         # if math.isnan(feature["pe"]):
@@ -137,6 +148,7 @@ class FeatureStep(Step):
             "turnover_rate_f" : kline[0].turnover_rate_f,  # 换手率(流通股本)
             "turnover_rate_f_3d" : kline.reduce("turnover_rate_f", 3, "ma"),  # 换手率(流通股本)
             "turnover_rate_f_7d" : kline.reduce("turnover_rate_f", 7, "ma"),  # 换手率(流通股本)
+            "turnover_rate_f_30d" : kline.reduce("turnover_rate_f", 30, "ma"),  # 换手率(流通股本)
             "total_mv" : kline[0].total_mv,  
         }
         # print("%s : %s" %(kline[0].date, feature))

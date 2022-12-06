@@ -106,7 +106,7 @@ class LRModel(Model):
         input = tf.gather(self.certain_bias, self.slot_bias_fid_index) 
         logits = tf.reduce_sum(input, axis = 1)
         self.emit("certainly/logits", logits)
-        certainly_raw= tf.sigmoid(logits) + 0.5
+        certainly_raw= tf.sigmoid(logits) + 0.2
         self.emit("certainly/raw_val", certainly_raw)
         certainly = certainly_raw/ tf.reduce_mean(certainly_raw)
         print("certainly: %s" %(certainly))

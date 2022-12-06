@@ -18,6 +18,12 @@ def read_instances(files):
             size, data = read_file_with_size(f, Instance)
             if size == 0:
                 break
+            # filter = False
+            # for fc in data.feature:
+            #     if 43705056829054412 in fc.fids:
+            #         filter = True
+            # if filter:
+            #     continue
             instances.append(data) 
     # logging.info("第一个Instance: %s" %(instances[0])) 
     logging.info("总训练样本: %s" %(len(instances)))
@@ -229,7 +235,7 @@ class TrainData():
           从train_items随机采样batch_size个数据(这里可重复采样)
         """
         mini_batch = random.choices(self.train_items, k = batch_size)
-        # return mini_batch
+        return mini_batch
         b = []
         for item in mini_batch:
             if item.raw_label < -0.05:

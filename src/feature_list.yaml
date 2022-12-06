@@ -34,11 +34,35 @@ feature_columns:
       step: 5
       max: 50
 
+  - name : turnover_f_3d # 换手(流通股)
+    depends : basic.turnover_rate_f_3d
+    method : LinearDiscrete 
+    slot : 4
+    args:   
+      step: 5
+      max: 50
+
+  - name : turnover_f_7d # 换手(流通股)
+    depends : basic.turnover_rate_f_7d
+    method : LinearDiscrete 
+    slot : 5
+    args:   
+      step: 5
+      max: 50
+    
+  - name : turnover_f_30d # 换手(流通股)
+    depends : basic.turnover_rate_f_30d
+    method : LinearDiscrete 
+    slot : 6
+    args:   
+      step: 3
+      max: 30
+
   # 总市值(单位万)
   - name : total_mv
     depends : basic.total_mv
     method : LogDiscrete 
-    slot : 4
+    slot : 7
     args:   
       min: 500000 # 最低50亿
       max : 20000000 # 最高2000亿(top 15)

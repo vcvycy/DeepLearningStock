@@ -23,7 +23,10 @@ class BaseMethod():
         assert slot > 0 and isinstance(raw_features, list)
         fids = []
         # 原始特征做hash，然后拼接slot
-        extracted_feature = str(self.extract(raw_features, conf))
+        if raw_features[0] == "EMPTY":    # 对于允许为空的特征值，赋值为EMPTY
+            extracted_feature = "EMPTY"
+        else:
+            extracted_feature = str(self.extract(raw_features, conf))
         # print(extracted_feature)
         hash_i54 = hash_string(extracted_feature)
         fids.append((slot << 54) + hash_i54) 
