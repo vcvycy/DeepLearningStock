@@ -253,14 +253,14 @@ feature_columns:
       base: 2
       max : 200
 
-  # 成交额相关: slot 100~129
-  - name : amount_360d         # 最近360天平均成交额
-    depends : amount.360d
-    slot : 100
-    method : LogDiscrete 
-    args:   
-      min: 10000
-      base: 2
+  # # 成交额相关: slot 100~129
+  # - name : amount_360d         # 最近360天平均成交额
+  #   depends : amount.360d
+  #   slot : 100
+  #   method : LogDiscrete 
+  #   args:   
+  #     min: 10000
+  #     base: 2
 
   - name : amount_change_1d         # 短期成交量变化: 1天vs 7天
     depends : amount.1d, amount.7d
@@ -314,10 +314,24 @@ feature_columns:
     method : PositionDiscrete 
     args:   
       step: 0.2
+
+  - name : 10d_ma_fibonacci_in_1yr         # 10日均线，在1年内的位置
+    depends : price.close_ma_10d, price.low_360d, price.high_360d
+    slot : 132
+    method : PositionDiscrete 
+    args:   
+      step: 0.2
+
+  - name : 30d_ma_fibonacci_in_1yr         # 30日均线，在1年内的位置
+    depends : price.close_ma_30d, price.low_360d, price.high_360d
+    slot : 133
+    method : PositionDiscrete 
+    args:   
+      step: 0.2
   
   - name : price_change_10d_ma         # 相比10日均线的位置
     depends : price.close, price.close_ma_10d
-    slot : 132
+    slot : 134
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
@@ -326,7 +340,7 @@ feature_columns:
 
   - name : price_change_30d_ma         # 相比30日均线的位置
     depends : price.close, price.close_ma_30d
-    slot : 133
+    slot : 135
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
@@ -335,7 +349,7 @@ feature_columns:
   
   - name : price_change_60d_ma         # 相比60日均线的位置
     depends : price.close, price.close_ma_60d
-    slot : 134
+    slot : 136
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
@@ -344,16 +358,34 @@ feature_columns:
 
   - name : price_change_200d_ma         # 相比200日均线的位置
     depends : price.close, price.close_ma_200d
-    slot : 135
+    slot : 137
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
       min : -0.5
       max : 0.6
   
+  - name : price_change_10d_ma_vs_200d_ma         # 10日均线 vs 200日均线
+    depends : price.close_ma_10d, price.close_ma_200d
+    slot : 138
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.05
+      min : -0.25
+      max : 0.25
+
+  - name : price_change_30d_ma_vs_200d_ma         # 30日均线 vs 200日均线
+    depends : price.close_ma_30d, price.close_ma_200d
+    slot : 139
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.05
+      min : -0.2
+      max : 0.2
+
   - name : above_200d_ma_days         # 200日均线上持续运行了多少天
     depends : price.200d_ma_above_date, time.date
-    slot : 136
+    slot : 150
     method : DateDiffDiscrete 
     args:   
       max : 128
@@ -361,7 +393,7 @@ feature_columns:
   
   - name : below_200d_ma_days         # 200日均线下持续运行了多少天
     depends : price.200d_ma_below_date, time.date
-    slot : 137
+    slot : 151
     method : DateDiffDiscrete 
     args:   
       max : 128
@@ -372,6 +404,15 @@ feature_columns:
   - name : median_price_14d         # 过去14天的中位数买入价 vs当前价格
     depends : median_price.14d,price.close
     slot : 161
+    method : ChangeRateDiscrete 
+    args:   
+      step: 0.03
+      min : -0.1
+      max : 0.1
+
+  - name : median_price_90d         # 过去90天的中位数买入价 vs当前价格
+    depends : median_price.90d,price.close
+    slot : 162
     method : ChangeRateDiscrete 
     args:   
       step: 0.03

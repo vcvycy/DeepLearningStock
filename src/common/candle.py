@@ -132,7 +132,8 @@ class Kline():
             if i >= len(self):
                 break
             c = self[i]
-            price = (c.high + c.low + c.close + c.open) / 4
+            # 成交额/成交量=平均成交价格(成交额单位k, 成交量单位手100)
+            price = c.amount*10/c.vol #  (c.high + c.low + c.close + c.open) / 4
             data.append((price, c.vol))
             vol_total += c.vol
         # 加权中位数, 按价格排序

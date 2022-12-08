@@ -40,6 +40,10 @@ class TushareSource(MultiThreadSource):
             end_date = self.conf.get("end_date", "")
             ts_code = self.all_stocks[stock_idx]["ts_code"]
             kline = TushareApi.get_kline_by_ts_code(ts_code, start_date, end_date)  
+            if kline.reduce("amount", 10, "ma") < 1000:
+                # print("%s 成交量太低， 过滤" %(kline.ts_code))
+                self.thread_finish_num +=1 
+                return 0
             ctx_num = 0  
             # 至少有lable_days天作为Label，所以这几天不采样训练数据
             for idx in range(len(kline)):

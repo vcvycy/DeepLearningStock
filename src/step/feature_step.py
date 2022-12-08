@@ -121,7 +121,7 @@ class FeatureStep(Step):
         kline = context.get("source.kline")  
         feature = {
             "%sd" %(d) : kline.median_price_estimator(d)
-                    for d in [14, 30, 60, 180]
+                    for d in [14, 30, 90]#, 180]
         }  
         return feature
     def get_basic_feature(self, context):
