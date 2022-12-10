@@ -334,18 +334,18 @@ feature_columns:
     slot : 134
     method : ChangeRateDiscrete 
     args:   
-      step: 0.1
-      min : -0.4
-      max : 0.4
+      step: 0.05
+      min : -0.2
+      max : 0.2
 
   - name : price_change_30d_ma         # 相比30日均线的位置
     depends : price.close, price.close_ma_30d
     slot : 135
     method : ChangeRateDiscrete 
     args:   
-      step: 0.1
-      min : -0.4
-      max : 0.5
+      step: 0.05
+      min : -0.3
+      max : 0.3
   
   - name : price_change_60d_ma         # 相比60日均线的位置
     depends : price.close, price.close_ma_60d
