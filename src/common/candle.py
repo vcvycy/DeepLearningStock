@@ -8,6 +8,15 @@ from common.utils import *
 import numpy as np
 import logging
 
+class MACD():
+    def __init__(self, ema12 = 0, ema26 = 0, dif = 0, dea = 0):
+        self.ema12 = ema12
+        self.ema26 = ema26
+        self.dif = dif
+        self.dea = dea
+    def __str__(self):
+        return "[macd] ema12=%.2f, ema26=%.2f, dif=%.2f, dea=%.2f" %(self.ema12, self.ema26, self.dif, self.dea)
+    
 class Candle(): 
     CommonAttr = [
         "time", "open", "high", "low", "close", "amount", "vol", "turnover_rate", "turnover_rate_f", "pre_close", "pe", "date", 'total_mv'
@@ -16,6 +25,7 @@ class Candle():
         # super(Candle, self).__init__()
         for attr in Candle.CommonAttr:
             setattr(self, attr, None) 
+        self.macd = None
         return 
     def __str__(self):
         s = ""
@@ -162,6 +172,31 @@ class Kline():
             else:
                 break
         return date if return_date else num
+    
+    def get_macd(self, offset = 0):
+        """
+          获取macd指标
+        """
+        c = self[offset]
+        # 情况一：已经算过了
+        if c.macd is not None:
+            return c.macd
+        # 情况二：只有一个candle
+        if offset == len(self) - 1:  # 最早的candle
+            c.macd = MACD()
+            c.macd.ema12 = c.macd.ema26 = c.close
+            c.macd.dif = 0
+            c.macd.dea = 0
+            return c.macd
+        # 情况三：
+        macd_prev = self.get_macd(offset + 1)
+        ema12 = macd_prev.ema12 * 11/13 + c.close * 2/13
+        ema26 = macd_prev.ema26 * 25/27 + c.close * 2/27
+        dif   = ema12 - ema26
+        dea   = macd_prev.dea * 8 / 10 + dif * 2/10
+        c.macd = MACD(ema12, ema26, dif, dea)
+        return c.macd
+
 
 if __name__ == "__main__":
     c = Candle 

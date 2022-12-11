@@ -177,7 +177,30 @@ class FeatureStep(Step):
             "pos" : max(min(pos, 2), -3)
         }
         return feature 
-
+    
+    def get_macd_feature(self, context):
+        """
+          macd相关特征
+        """
+        kline = context.get("source.kline")  
+        macd = kline.get_macd()
+        # 上一次交叉的时间: 如果绿变红，则为正数；否则为负数
+        num = 0
+        while num < 50:
+            num += 1
+            macd_prev = kline.get_macd(num)
+            if (macd.dif -macd.dea) * (macd_prev.dif -macd_prev.dea) < 0:
+                break
+        if macd.dif - macd.dea < 0:
+            num = -num
+        feature = {
+            "dif_cmp_close" : macd.dif / kline[0].close,
+            "dea_cmp_close" : macd.dea / kline[0].close,
+            "dif_sub_dea" : macd.dif -macd.dea,
+            "pos_num" : num
+        }
+        return feature
+    
     def _execute(self, context):
         """
           原始特征抽取
@@ -192,7 +215,8 @@ class FeatureStep(Step):
             "price" : self.get_price_feature(context),
             "median_price" : self.get_median_price(context),
             "basic" : self.get_basic_feature(context),# bug, 如PE数据出现穿越
-            "boll" : self.get_boll_feature(context)
+            "boll" : self.get_boll_feature(context),
+            "macd" : self.get_macd_feature(context),
         } 
         context.set(self.out_key, feature)
         return 

@@ -441,3 +441,32 @@ feature_columns:
     depends : boll.pos
     slot : 202
     method : BaseMethod
+
+  
+  # 220 ~ 239 macd
+  - name : dif_cmp_close         # dif和价格
+    depends : macd.dif_cmp_close
+    slot : 220
+    method : LinearDiscrete  
+    args:   
+      step: 0.01
+      min: -0.08
+      max: 0.08
+
+  - name : dea_cmp_close         # dea和价格
+    depends : macd.dea_cmp_close
+    slot : 221
+    method : LinearDiscrete  
+    args:   
+      step: 0.01
+      min: -0.08
+      max: 0.08
+
+  - name : macd_pos_num         # 连续多少个红色柱子(绿色则为负数)
+    depends : macd.pos_num
+    slot : 222
+    method : LinearDiscrete  
+    args:   
+      step: 5
+      min: -50
+      max: 50
