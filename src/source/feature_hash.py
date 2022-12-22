@@ -77,9 +77,11 @@ class PositionDiscrete(BaseMethod):
         则 (30-10)/ (90-10) = 0.25
     """
     def extract(self, fs, conf):
-        assert fs[0] >= fs[1] and fs[0] <= fs[2], "[PositionDiscrete] %s" %(fs)
+        # assert fs[0] >= fs[1] and fs[0] <= fs[2], "[PositionDiscrete] %s" %(fs)
         step =conf.get("step", 0.1)
         k = (fs[0] - fs[1]) / (fs[2] - fs[1])
+        k = max(k, -1)
+        k = min(k, 2)
         feature = math.floor(k / step)
         return str(feature)
 

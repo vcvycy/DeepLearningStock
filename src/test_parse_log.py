@@ -90,6 +90,8 @@ def main(stock = None, show_date = False, certainly_threshold = 0):
             if get_certainly_val(line) < certainly_threshold:
                 certain_filter_cnt += 1
                 continue
+            # if int(date) < 20221100:
+            #     continue
             if show_date:
                 add_stats(date, label, raw_label, topk) 
             add_stats("ALL_TIME", label, raw_label, topk)

@@ -306,7 +306,7 @@ class LRModel(Model):
 if __name__ == "__main__":
     ## 载入yaml配置文件
     conf = yaml.safe_load(open("model_train.yaml", 'r') .read())
-    files = conf.get("train_files")[:1]
+    files = conf.get("train_files")
     suffix = files[0].split(".")[-1] 
     log_file = "%s.%s" %(conf.get("log_file"), suffix)
     logging.basicConfig(filename=log_file, format = '%(levelname)s %(asctime)s %(message)s', level=logging.DEBUG)

@@ -24,6 +24,7 @@ message Instance {
     string name              = 3;         
     string ts_code           = 4;
     string date              = 5;
+    int64  total_mv          = 6;   // 市值
 }
 // message CandlePB {      // k线图一个蜡烛
 //     int64 time  = 1;  // 开始时间

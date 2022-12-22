@@ -127,11 +127,7 @@ class Kline():
         if reduce_fun in fun_map:
             reduce_fun = fun_map[reduce_fun]
         # 如果取的candles数太高，则强制设置小 
-        if num > len(self):
-            # logging.error("candle reduce num too large: %s, reset to %s" %(num, len(self)))
-            num = len(self)
-        assert offset +num  -1 < len(self) , "offset 超出范围 %s>=%s" %(offset + num -1, len(self)) 
-        data = [getattr(self[i], attr) for i in range(offset, offset + num)]
+        data = [getattr(self[i], attr) for i in range(offset, min(num, len(self)))]
         return reduce_fun(data) 
     
     def median_price_estimator(self, days):

@@ -26,6 +26,9 @@ if __name__ == "__main__":
             continue
         if args.date is not None and ins.date != args.date:
             continue
+
+        if "ETF" in ins.name or "LOF" in ins.name:
+            continue
         if args.fids != "":
             contain = 0
             for fc in ins.feature:
@@ -41,6 +44,8 @@ if __name__ == "__main__":
         print("slots: %s(%s)" %(len(slots), slots))
         print('-'* 50 + str(i+1) + '-'*50)
         print(ins)
+        print(ins.total_mv)
+        print(ins.name)
         input("press any key to continue...")
 
     # suffix = timestamp2str(time.time(), "%Y%m%d_%H")

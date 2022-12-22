@@ -30,7 +30,7 @@ class FeatureStep(Step):
         """
         kline = context.get("source.kline") 
         feature = {
-            "%sd" %(d) : kline.get_rise(d) for d in [1, 3, 7, 30, 180]
+            "%sd" %(d) : kline.get_rise(d) for d in [1, 3, 7, 14, 30, 180]
         }
         return feature
     def get_vol_related_feature(self, context):
@@ -93,23 +93,25 @@ class FeatureStep(Step):
             "high_7d" : kline.reduce("high", 7, "max"),
             "low_7d" : kline.reduce("low", 7, "min"),
 
-            "high_30d" : kline.reduce("high", 30, "max"),
-            "low_30d" : kline.reduce("low", 30, "min"),
+            "high_7d_14d" : kline.reduce("high", 14, "max", offset = 7),
+            "low_7d_14d" : kline.reduce("low", 14, "min", offset = 7),
 
-            "high_60d" : kline.reduce("high", 60, "max"),
-            "low_60d" : kline.reduce("low", 60, "min"),
+            "high_14d_90d" : kline.reduce("high", 90, "max", offset = 14),
+            "low_14d_90d" : kline.reduce("low", 90, "min", offset = 14),
 
-            "high_360d" : kline.reduce("high", 360, "max"),
-            "low_360d" : kline.reduce("low", 360, "min"),
+            "high_90d_200d" : kline.reduce("high", 200, "max", offset = 90),
+            "low_90d_200d" : kline.reduce("low", 200, "min", offset = 90),
             # 均价
+            "open" : kline[0].open,
             "close" : kline[0].close,                             #  收盘价 
-            "close_ma_3d" : kline.reduce("close", 3, "ma"),      # 7日均价
+            "close_ma_3d" : kline.reduce("close", 3, "ma"),      # 3日均价
+            "close_ma_5d" : kline.reduce("close", 5, "ma"),      # 5日均价
             "close_ma_7d" : kline.reduce("close", 7, "ma"),      # 7日均价
             "close_ma_10d" : kline.reduce("close", 10, "ma"),    # 10日均价
             "close_ma_30d" : kline.reduce("close", 30, "ma"),    # 60日均线
             "close_ma_60d" : kline.reduce("close", 60, "ma"),    # 60日均线
             "close_ma_200d" : kline.reduce("close", 200, "ma"),  # 200日均价
-        } 
+        }
         # 在200日均线(只计算一个值)上、下运行了多少天
         ma_200d = feature["close_ma_200d"] 
         feature["200d_ma_above_date"] = kline.match(lambda c : c.close > ma_200d, return_date = True) 
@@ -172,6 +174,8 @@ class FeatureStep(Step):
             "low" : low, 
             "mid" : ma,
             "std_rate" : std/kline[0].close,
+            "std_rate_14d" : kline.reduce("close", 14, 'std')/kline[0].close,
+            "std_rate_60d" : kline.reduce("close", 60, 'std')/kline[0].close,
             "std_rate_200d" : kline.reduce("close", 200, 'std')/kline[0].close,
             # 当前位置: 有5条线，分别是2/1/0/-1/-2倍的标准差, 把pos分成-3, -2, .. ,1, 2
             "pos" : max(min(pos, 2), -3)

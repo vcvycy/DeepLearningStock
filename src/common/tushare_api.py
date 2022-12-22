@@ -174,9 +174,11 @@ if __name__ == "__main__":
     
     # TushareApi.get_basic_by_ts_code("000001.SZ", start_date= "20200101")
     # TushareApi.get_basic_by_ts_code("513050.SH", start_date= "20200101")
-    kline = TushareApi.get_kline_by_ts_code("688076.SH", start_date= "20220426", end_date="")
-    for i in range(100):
-        print("%s %s" %(kline[i].date, kline.get_macd(i)))
+    kline = TushareApi.get_kline_by_ts_code("000001.SZ", start_date= "20200601", end_date="")
+    print(len(kline))
+    print(kline)
+    # for i in range(100):
+    #     print("%s %s" %(kline[i].date, kline.get_macd(i)))
     # for i in kline:
     #     print(i)
     # kline.draw()
