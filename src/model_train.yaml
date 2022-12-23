@@ -2,7 +2,10 @@ log_file : "../log/model_train.log"
 
 train_files:  # 只读第一个
   # 全量股票
-  -  ../training_data/data.bin.20221206_2055
+  - ../training_data/data.bin.20221222_1628
+  # - ../training_data/data.bin.20221221_1919
+  # - ../training_data/data.bin.20221220_2043
+  # -  ../training_data/data.bin.20221209_1922
   # - ../training_data/data.bin.20221205_1649  # 包括etf
   # - ../training_data/data.bin.20221202_1757
   # - ../training_data/data.bin.20221130_2002
@@ -22,7 +25,8 @@ train_data:
     args: 
       # key : next_14d_mean_price   #
       key : next_14d_close_price   #
-      threshold : 0.05   #
+      # key : next_7d_14d_mean_price
+      threshold : 0.03   #
   min_fid_occurrence : 0    # 每个fid最少出现几次，低于这个次数，程序直接退出报错
   debug:                 # debug 函数
     fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些

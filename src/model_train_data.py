@@ -24,6 +24,10 @@ def read_instances(files):
             #         filter = True
             # if filter:
             #     continue
+            if "ETF" in data.name or "LOF" in data.name:
+                continue
+            # if len(instances) > 10000:
+            #     break
             instances.append(data) 
     # logging.info("第一个Instance: %s" %(instances[0])) 
     logging.info("总训练样本: %s" %(len(instances)))
@@ -121,7 +125,8 @@ class TrainData():
             threshold = args.get("threshold")
             key = args.get("key") 
             assert key in ins.label, "key %s not in label: %s" %(key, ins)
-            label = 0  if ins.label[key] < threshold else 1
+            label = 0  if ins.label[key] < threshold and ins.label["next_7d_close_price"] < threshold and ins.label["next_14d_close_price"] < threshold else 1
+            # label = 0  if ins.label[key] < threshold  else 1
             return label 
 
         label_conf = self.conf.get("label")
@@ -138,9 +143,9 @@ class TrainData():
     def __init_train_items(self):
         """
         """
+        self.train_item_weights = []
         self.train_items = []
         self.validate_items = []
-        ts_code2date_item = {} 
         for ins in self.valid_instances:
 
             fids = []
@@ -148,10 +153,13 @@ class TrainData():
                 fids.extend([fid for fid in  fc.fids if fid in self.fid2index])
             label, raw_label = self.__get_label(ins)
             if label is not None and ins.date < self.validate_date:
-                self.train_items.append(TrainItem(fids, label, raw_label))
+                train_item = TrainItem(fids, label, raw_label)
+                self.train_items.append(train_item)
+                self.train_item_weights.append(self.__init_train_item_sample_weight(train_item))  # 训练样本权重
             else: 
                 # 仍然写入label: 如果可用，则用户回测
                 self.validate_items.append(TrainItem(fids, label, raw_label, ts_code = ins.ts_code, date = ins.date, name = ins.name))  
+        logging.info("train_item weights: %s" %(self.train_item_weights[:100]))
         # 验证集
         assert len(self.validate_items) > 0, "验证集大小为0"
         logging.info("第一个TrainItem: %s" %(str(self.train_items[0])))
@@ -230,15 +238,41 @@ class TrainData():
         """
         return len(self.fid2index) 
 
+    def __init_train_item_sample_weight(self, train_item):
+        """
+          每个训练样本的采样权重
+        """
+        return 1   # 权重都一样
+        #
+        # raw_label_abs = math.fabs(train_item.raw_label)
+        # if raw_label_abs > 0.3:
+        #     return 3
+        # elif raw_label_abs > 0.15:
+        #     return 2
+        # else:
+        #     return 1
+
     def get_mini_batch(self, batch_size = 50):
         """
           从train_items随机采样batch_size个数据(这里可重复采样)
         """
-        mini_batch = random.choices(self.train_items, k = batch_size)
+        if not hasattr(self, "batch_idx") :
+            self.batch_idx = []
+        if len(self.batch_idx) < batch_size:
+            for i in range(len(self.train_items)):
+                train_item = self.train_items[i]
+                w = self.train_item_weights[i]
+                self.batch_idx += [i] * w 
+            random.shuffle(self.batch_idx)
+            logging.info("refresh batch_idx: %s after shuffle: %s" %(len(self.batch_idx), self.batch_idx[:10]))
+        assert len(self.batch_idx) >= batch_size, "所有权重还不够一次batch size"
+        mini_batch = []
+        for i in range(batch_size):
+            idx = self.batch_idx.pop()
+            mini_batch.append(self.train_items[idx])
         return mini_batch
-        b = []
-        for item in mini_batch:
-            if item.raw_label < -0.05:
-                b.append(item) 
-            b.append(item)
-        return b
+
+
+        # , weights = self.train_item_weights,
+        # mini_batch = random.choices(self.train_items, k = batch_size)
+        # return mini_batch

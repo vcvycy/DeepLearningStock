@@ -12,10 +12,10 @@ class LabelStep(Step):
         """
             接下来的N天内, 最高/最低/收盘价格
         """
+        kline_label = context.get("source.kline_label")
         key = conf.get("key") 
         for d in conf["days"].split(","):
             d = int(d) 
-            kline_label = context.get("source.kline_label")
             if len(kline_label) < d:
                 continue # 数据不够，不写label 
             open_price = kline_label[-1].pre_close    # 前一天收盘价
@@ -34,6 +34,17 @@ class LabelStep(Step):
             # 平均收盘价
             mean_price = numpy.mean([kline.close for kline in kline_label[-d:]]) 
             labels["next_%sd_mean_price" %(d)] =  float_trun(mean_price/open_price -1.0)
+        
+        if len(kline_label) >=14:
+            open_price = kline_label[-1].pre_close    # 前一天收盘价
+            mean_7d_14d = numpy.mean([kline.close for kline in kline_label[-14:-7]]) 
+            # print("%s %s" %(kline_label[-1].date, [kline.close for kline in kline_label[-14:-7]]))
+            labels["next_7d_14d_mean_price"] = float_trun(mean_7d_14d/open_price -1.0)
+        if len(kline_label) >=7:
+            open_price = kline_label[-1].pre_close    # 前一天收盘价
+            mean_3d_7d = numpy.mean([kline.close for kline in kline_label[-7:-3]]) 
+            # print("%s %s" %(kline_label[-1].date, [kline.close for kline in kline_label[-14:-7]]))
+            labels["next_3d_7d_mean_price"] = float_trun(mean_3d_7d/open_price -1.0)
         return labels
 
     def _execute(self, context):
