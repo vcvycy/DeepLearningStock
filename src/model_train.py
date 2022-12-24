@@ -137,7 +137,20 @@ class LRModel(Model):
                                 self.slot_bias_fid_index, bias_input))
         
         # 过Dense nn, 得到pred和loss
-        bias_sum = tf.reduce_sum(bias_input, axis = 1)
+        if self.conf.get("bias_attention"):
+            bias_attention = tf.nn.softmax(self.dense_tower(bias_input, [8, slot_num]))
+            self.emit("bias_attention", bias_attention)
+            bias_input *= bias_attention
+            bias_sum = tf.reduce_sum(bias_input, axis = 1)
+            # 每个slot监控
+            attn_transpose = tf.transpose(bias_attention)
+            slot2index = self.train_data.slot2idx
+            index2slot = {slot2index[slot] : slot for slot in slot2index}
+            for idx in index2slot:
+                slot = index2slot[idx]
+                self.emit("attention/slot_%s_idx_%s" %(slot, idx), attn_transpose[idx])
+        else:
+            bias_sum = tf.reduce_sum(bias_input, axis = 1)
         logits = bias_sum + self.global_bias
         self.emit("logit/bias_sum", bias_sum)
         if isinstance(self.conf.get("bias_nn_dims"), list):
@@ -313,7 +326,7 @@ if __name__ == "__main__":
     # 载入instance
     logging.info("START")
     logging.info("conf: %s" %(conf)) 
-    instances = read_instances(files)
+    instances = read_instances(files, conf.get("max_ins"))
     # 预处理instance: 处理label, 过滤fid等
     train_data = TrainData(instances, conf.get("train_data"))  
 

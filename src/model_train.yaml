@@ -1,22 +1,9 @@
 log_file : "../log/model_train.log"
 
+# max_ins: 10000   # debug，最多读多少数据
 train_files:  # 只读第一个
   # 全量股票
   - ../training_data/data.bin.20221222_1628
-  # - ../training_data/data.bin.20221221_1919
-  # - ../training_data/data.bin.20221220_2043
-  # -  ../training_data/data.bin.20221209_1922
-  # - ../training_data/data.bin.20221205_1649  # 包括etf
-  # - ../training_data/data.bin.20221202_1757
-  # - ../training_data/data.bin.20221130_2002
-  # 1000个股票, 365天数据
-  # - ../training_data/data.bin.20221128_1646
-  # 测试
-  # - ../training_data/data.bin.20221129_1633  # fix pe/turnover
-  # - ../training_data/data.bin.20221130_1802
-  # - ../training_data/data.bin.20221129_1201
-  # 前复权
-  # - ../training_data/data.bin.20221201_0100
 #预处理instance: 处理label, 过滤fid等
 train_data:
   validate_date : "20220901"      # 验证集: 没有label且时间在这个后面
@@ -65,6 +52,7 @@ model:
     batch_size: 1000
     epoch : 50000
   bias_nn_dims: [16,1]
+  bias_attention: True
 # 调参经验： 
 #  1. learning rate (随着特征增加，原来适合的lr可能变得不适合)
 #      1e-2/1e-3: 太高了，直接学飞

@@ -8,7 +8,7 @@ import tensorflow.compat.v1 as tf
 import logging
 import numpy as np
 import math
-def read_instances(files):
+def read_instances(files, max_ins = None):
     if not isinstance(files, list):
         files = [files]
     instances = []
@@ -26,8 +26,8 @@ def read_instances(files):
             #     continue
             if "ETF" in data.name or "LOF" in data.name:
                 continue
-            # if len(instances) > 10000:
-            #     break
+            if max_ins is not None and len(instances) >= max_ins:
+                break
             instances.append(data) 
     # logging.info("第一个Instance: %s" %(instances[0])) 
     logging.info("总训练样本: %s" %(len(instances)))
