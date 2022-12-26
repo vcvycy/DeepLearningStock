@@ -34,7 +34,7 @@ def read_instances(files, max_ins = None):
     return instances
 
 class TrainItem():
-    def __init__(self, fids, label, raw_label, date = "", ts_code = "", name = ""):
+    def __init__(self, fids, label, raw_label, name2dense, date = "", ts_code = "", name = ""):
         # 这里的fid为过滤过的fid
         self.fids = fids
         self.label = label
@@ -42,6 +42,7 @@ class TrainItem():
         self.date = date
         self.ts_code = ts_code
         self.name = name
+        self.name2dense = name2dense
         return 
     def __str__(self):
         return "TrainItem: fids: %s; label : %s" %(self.fids, self.label)
@@ -125,7 +126,7 @@ class TrainData():
             threshold = args.get("threshold")
             key = args.get("key") 
             assert key in ins.label, "key %s not in label: %s" %(key, ins)
-            label = 0  if ins.label[key] < threshold and ins.label["next_7d_close_price"] < threshold and ins.label["next_14d_close_price"] < threshold else 1
+            label = 0  if ins.label[key] < threshold and ins.label["next_7d_close_price"] < threshold else 1
             # label = 0  if ins.label[key] < threshold  else 1
             return label 
 
@@ -136,6 +137,9 @@ class TrainData():
             label = None
             if label_conf.get("method") == "binarize":
                 label = binarize(ins, args) 
+            else:
+                key = args.get("key") 
+                label = ins.label[key]
         else:
             return None, None
         return label, ins.label.get(args.get("key"))
@@ -147,18 +151,20 @@ class TrainData():
         self.train_items = []
         self.validate_items = []
         for ins in self.valid_instances:
-
             fids = []
+            name2dense = {}
             for fc in ins.feature:
                 fids.extend([fid for fid in  fc.fids if fid in self.fid2index])
+                if len(fc.dense) > 0:
+                    name2dense[fc.name] = fc.dense
             label, raw_label = self.__get_label(ins)
             if label is not None and ins.date < self.validate_date:
-                train_item = TrainItem(fids, label, raw_label)
+                train_item = TrainItem(fids, label, raw_label, name2dense)
                 self.train_items.append(train_item)
                 self.train_item_weights.append(self.__init_train_item_sample_weight(train_item))  # 训练样本权重
             else: 
                 # 仍然写入label: 如果可用，则用户回测
-                self.validate_items.append(TrainItem(fids, label, raw_label, ts_code = ins.ts_code, date = ins.date, name = ins.name))  
+                self.validate_items.append(TrainItem(fids, label, raw_label, name2dense, ts_code = ins.ts_code, date = ins.date, name = ins.name))  
         logging.info("train_item weights: %s" %(self.train_item_weights[:100]))
         # 验证集
         assert len(self.validate_items) > 0, "验证集大小为0"
@@ -203,7 +209,7 @@ class TrainData():
             # 是否所有fid都被过滤
             exist_valid_fid = False
             for fc in ins.feature:
-                assert len(fc.fids) == 1, "每个feature column, 当前只支持1个fid"
+                assert len(fc.fids) <= 1, "每个feature column, 当前只支持1个fid %s" %(ins)
                 for i in range(len(fc.fids)):
                     fid = fc.fids[i]
                     raw_feature = ",".join(fc.raw_feature)
@@ -244,7 +250,6 @@ class TrainData():
         """
         return 1   # 权重都一样
         #
-        # raw_label_abs = math.fabs(train_item.raw_label)
         # if raw_label_abs > 0.3:
         #     return 3
         # elif raw_label_abs > 0.15:

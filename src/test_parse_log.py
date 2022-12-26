@@ -32,8 +32,8 @@ def add_stats(date, label, raw_label, topk):
     rank[date] +=  topk
     raw_label_sum[date] += raw_label
     if tot[date] in thresholds: 
-        outputs[date] += "总数: %5d, 真实数量: %5d 正确率: %.2f%% 原始label均值: %.2f 平均排名: %.1f\n"  %(tot[date], 
-            corr[date], 100*corr[date]/tot[date], raw_label_sum[date] / tot[date],  rank[date]/tot[date])
+        outputs[date] += "总数: %5d, 真实数量: %5d 正确率: %.2f%% 原始label均值: %.1f%% 平均排名: %.1f\n"  %(tot[date], 
+            corr[date], 100*corr[date]/tot[date], 100* raw_label_sum[date] / tot[date],  rank[date]/tot[date])
     return 
 
 def read():
@@ -100,8 +100,8 @@ def main(stock = None, show_date = False, certainly_threshold = 0):
         for date in dates: 
             print(("第%s次运行结果-%s" %(round,date)).center(100, "=")) 
             print(outputs[date])
-            print( "总数: %5d, 正例数量: %5d 正确率: %.2f%% 原始label均值: %.2f 平均排名: %.1f\n"  %(tot[date], 
-                    corr[date], 100*corr[date]/tot[date], raw_label_sum[date] / tot[date],  rank[date]/tot[date]))
+            print( "总数: %5d, 正例数量: %5d 正确率: %.2f%% 原始label均值: %.1f%% 平均排名: %.1f\n"  %(tot[date], 
+                    corr[date], 100*corr[date]/tot[date], 100*raw_label_sum[date] / tot[date],  rank[date]/tot[date]))
         print("注: 过滤确定性低的股票： %s个" %(certain_filter_cnt))
 if __name__ == "__main__":
     import argparse

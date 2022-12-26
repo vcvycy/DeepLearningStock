@@ -60,11 +60,15 @@ class Model():
         if loss_type == 'cross_entropy':
             pred = tf.sigmoid(logits, name = "pred")
             loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label, logits=logits)  
-            self.get_certrain_prob()
-            loss *= self.certainly
-            loss = tf.reduce_sum(loss, name = "loss")
+        # elif loss_type == "mse":
+        #     pred = logits
+        #     loss = (label - pred) * (label - pred)
+        #     print("MSE: %s" %(loss))
         else:
             raise Exception("unknown loss_type: %s" %(loss_type))
+        self.get_certrain_prob()
+        loss *= self.certainly
+        loss = tf.reduce_sum(loss, name = "loss")
         return pred, loss
     
     def _build_dense_nn(self):
@@ -136,6 +140,15 @@ class LRModel(Model):
         logging.info("[BuildDenseNN]dense model: %s fid_index: %s bias_input: %s" %(self.sparse_bias, 
                                 self.slot_bias_fid_index, bias_input))
         
+        logits = 0
+        # 过去30天走势dense图
+        if self.conf.get("dense_30d"):
+            self.last_30d_close = tf.placeholder(tf.float32, [None, 30], name="last_30d_close")  # 长度为所有fid数量， 1表示有这个Fid， 0表示没有这个fid
+            self.emit("last_30d_close", self.last_30d_close)
+            last_30d_nn_out = tf.reduce_sum(self.dense_tower(self.last_30d_close, [8, 1]), axis = 1)
+            self.emit("logits/last_30d_out", last_30d_nn_out)
+            logits += last_30d_nn_out
+        
         # 过Dense nn, 得到pred和loss
         if self.conf.get("bias_attention"):
             bias_attention = tf.nn.softmax(self.dense_tower(bias_input, [8, slot_num]))
@@ -151,7 +164,7 @@ class LRModel(Model):
                 self.emit("attention/slot_%s_idx_%s" %(slot, idx), attn_transpose[idx])
         else:
             bias_sum = tf.reduce_sum(bias_input, axis = 1)
-        logits = bias_sum + self.global_bias
+        logits += bias_sum + self.global_bias
         self.emit("logit/bias_sum", bias_sum)
         if isinstance(self.conf.get("bias_nn_dims"), list):
             dims = self.conf.get("bias_nn_dims")
@@ -178,14 +191,17 @@ class LRModel(Model):
         label = []
         slot2index = self.train_data.slot2idx
         fid2index = self.train_data.fid2index
+        # last_30d_close = []
         for train_item in mini_batch:
             fid_index.append(train_item.get_slot_indexs(slot2index, fid2index))
             #label
             label.append(train_item.label)
+            # last_30d_close.append(train_item.name2dense["last_30d_close"])
         feed_dict = {
             self.learning_rate : self.conf.get("learning_rate"),
             self.slot_bias_fid_index:  fid_index,
-            self.label : label
+            self.label : label,
+            # self.last_30d_close :last_30d_close
         }
         return feed_dict
     

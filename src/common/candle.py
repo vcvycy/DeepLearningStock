@@ -14,6 +14,7 @@ class MACD():
         self.ema26 = ema26
         self.dif = dif
         self.dea = dea
+        self.macd = (dif - dea) * 2  # macd柱状值
     def __str__(self):
         return "[macd] ema12=%.2f, ema26=%.2f, dif=%.2f, dea=%.2f" %(self.ema12, self.ema26, self.dif, self.dea)
     

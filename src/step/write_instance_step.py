@@ -50,6 +50,11 @@ class WriteInstanceStep(Step):
                 fc.raw_feature.extend([str(item) for item in raw_feature])
             fc.extracted_features.extend(extracted_features)
             ins.feature.extend([fc])
+        # # dense 特征
+        # fc = FeatureColumn()
+        # fc.name = "last_30d_close"
+        # fc.dense.extend(context.get("raw_feature.dense.last_30d_close"))
+        # ins.feature.extend([fc])
         # label
         labels = context.get("label")
         for k in labels:

@@ -177,8 +177,8 @@ class FeatureStep(Step):
             "std_rate_14d" : kline.reduce("close", 14, 'std')/kline[0].close,
             "std_rate_60d" : kline.reduce("close", 60, 'std')/kline[0].close,
             "std_rate_200d" : kline.reduce("close", 200, 'std')/kline[0].close,
-            # 当前位置: 有5条线，分别是2/1/0/-1/-2倍的标准差, 把pos分成-3, -2, .. ,1, 2
-            "pos" : max(min(pos, 2), -3)
+            # 当前位置: 有7条线，分别是3/2/1/0/-1/-2/-3倍的标准差, 把pos分成-4, -3, .. ,1, 2, 3
+            "pos" : max(min(pos, 3), -4)
         }
         return feature 
     
@@ -200,11 +200,23 @@ class FeatureStep(Step):
         feature = {
             "dif_cmp_close" : macd.dif / kline[0].close,
             "dea_cmp_close" : macd.dea / kline[0].close,
-            "dif_sub_dea" : macd.dif -macd.dea,
+            "macd" : macd.macd,
             "pos_num" : num
         }
         return feature
     
+    def get_dense_last_n_day(self, context):
+        """
+          dense特征
+        """
+        kline = context.get("source.kline") 
+        assert len(kline) >= 30, "dense特征失败, len < 30"
+        close = kline[0].close
+        feature = {
+            "last_30d_close" : [(kline[i].close -close)/close for i in range(30)]
+        } 
+        return feature
+
     def _execute(self, context):
         """
           原始特征抽取
@@ -221,6 +233,8 @@ class FeatureStep(Step):
             "basic" : self.get_basic_feature(context),# bug, 如PE数据出现穿越
             "boll" : self.get_boll_feature(context),
             "macd" : self.get_macd_feature(context),
+            # dense 特征
+            "dense" : self.get_dense_last_n_day(context)
         } 
         context.set(self.out_key, feature)
         return 

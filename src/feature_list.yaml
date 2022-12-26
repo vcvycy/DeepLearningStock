@@ -78,7 +78,7 @@ feature_columns:
     slot : 49
     args:   
       start: 0
-      step: 0.033
+      step: 0.032
       min: -0.15
       max: 0.15
 
@@ -100,7 +100,7 @@ feature_columns:
       start: 0
       step: 0.05
       min: -0.3
-      max: 0.6
+      max: 0.5
 
   - name : rise_14d         # 最近14天涨跌
     depends : recent_rise.14d
@@ -119,7 +119,7 @@ feature_columns:
     args:   
       step: 0.1
       min : -0.45
-      max: 1.3
+      max: 0.9
 
   - name : rise_180d         # 最近N天涨跌
     depends : recent_rise.180d
@@ -127,7 +127,7 @@ feature_columns:
     slot : 54
     args:   
       step: 0.2
-      min : -0.6
+      min : -0.7
       max: 2
   
   # 当前价格
@@ -148,7 +148,7 @@ feature_columns:
     args:   
       step: 0.03
       min : 0
-      max : 0.1
+      max : 0.15
 
   - name : high_3d_cmp_close         # 最近N天: high vs close
     depends : price.high_3d, price.close
@@ -174,7 +174,7 @@ feature_columns:
     slot : 63
     args:   
       step: 0.03
-      min : -0.1
+      min : -0.15
       max : 0
 
   - name : low_3d_cmp_close         # 最近N天: low vs close
@@ -354,8 +354,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.05
-      min : -0.2
-      max : 0.2
+      min : -0.3
+      max : 0.3
 
   - name : price_change_30d_ma         # 相比30日均线的位置
     depends : price.close, price.close_ma_30d
@@ -363,8 +363,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.05
-      min : -0.3
-      max : 0.3
+      min : -0.35
+      max : 0.35
   
   - name : price_change_60d_ma         # 相比60日均线的位置
     depends : price.close, price.close_ma_60d
@@ -372,8 +372,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
-      min : -0.4
-      max : 0.5
+      min : -0.5
+      max : 0.6
 
   - name : price_change_200d_ma         # 相比200日均线的位置
     depends : price.close, price.close_ma_200d
@@ -381,8 +381,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.1
-      min : -0.5
-      max : 0.6
+      min : -0.6
+      max : 0.8
   
   - name : price_change_10d_ma_vs_200d_ma         # 10日均线 vs 200日均线
     depends : price.close_ma_10d, price.close_ma_200d
@@ -390,8 +390,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.05
-      min : -0.25
-      max : 0.25
+      min : -0.5
+      max : 0.5
 
   - name : price_change_30d_ma_vs_200d_ma         # 30日均线 vs 200日均线
     depends : price.close_ma_30d, price.close_ma_200d
@@ -399,8 +399,8 @@ feature_columns:
     method : ChangeRateDiscrete 
     args:   
       step: 0.05
-      min : -0.2
-      max : 0.2
+      min : -0.46
+      max : 0.4
 
   - name : above_200d_ma_days         # 200日均线上持续运行了多少天
     depends : price.200d_ma_above_date, time.date
@@ -425,18 +425,18 @@ feature_columns:
     slot : 161
     method : ChangeRateDiscrete 
     args:   
-      step: 0.03
-      min : -0.1
-      max : 0.1
+      step: 0.05
+      min : -0.25
+      max : 0.25
 
   - name : median_price_90d         # 过去90天的中位数买入价 vs当前价格
     depends : median_price.90d,price.close
     slot : 162
     method : ChangeRateDiscrete 
     args:   
-      step: 0.03
-      min : -0.1
-      max : 0.1
+      step: 0.05
+      min : -0.25
+      max : 0.25
   
   
   # 200 ~ 219 布林通道
@@ -485,8 +485,8 @@ feature_columns:
     method : LinearDiscrete  
     args:   
       step: 0.01
-      min: -0.08
-      max: 0.08
+      min: -0.09
+      max: 0.09
 
   - name : dea_cmp_close         # dea和价格
     depends : macd.dea_cmp_close
@@ -505,3 +505,12 @@ feature_columns:
       step: 5
       min: -50
       max: 50
+    
+  # - name : macd         # 当前macd值/
+  #   depends : macd.macd
+  #   slot : 222
+  #   method : LinearDiscrete  
+  #   args:   
+  #     step: 5
+  #     min: -50
+  #     max: 50
