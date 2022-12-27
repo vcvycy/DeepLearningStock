@@ -15,6 +15,23 @@ class FidExtractionStep(Step):
         self.auto_slot = self.feature_list.get("auto_slot", False)
         self.auto_slot_idx = self.feature_list.get("auto_slot_start", 500)
         self.auto_slot_name_map = {}
+        self.check_feature_config()
+        return 
+    def check_feature_config(self):
+        """
+          常规检查，看看配置是否有问题
+        """
+        # slot是否重复
+        exist_slot = set()
+        exist_name = set()
+        for fc in self.feature_list.get("feature_columns"):
+            slot = fc.get("slot")
+            name = fc.get("name")
+            assert slot is not None, "slot为空: %s" %(fc)
+            assert slot not in exist_slot, "slot: %s重复" %(fc)    
+            assert name is not None and name not in exist_name, "feature name配置错误: %s" %(name)
+            exist_slot.add(slot)        
+            exist_name.add(name)
         return 
 
     def get_auto_slot(self, feature_name):
