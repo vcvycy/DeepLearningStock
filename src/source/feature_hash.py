@@ -42,6 +42,8 @@ class LinearDiscrete(BaseMethod):
     def extract(self, features, conf):
         INF = 10**10
         f = features[0]
+        start = conf.get("start", 0)
+        f -= start
         assert isinstance(f, float) or isinstance(f, int), "feature: %s" %(f)
         step =conf.get("step", 1)
         # 区间内

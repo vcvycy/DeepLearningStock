@@ -81,6 +81,10 @@ class TushareApi:
                 "category" : "stock"
             })
             TushareApi.__ts_code2type[value["ts_code"]] = "stock"
+        # 指数
+        df = client.index_basic(market = "SSE")
+        for idx,value in df.iterrows(): 
+            TushareApi.__ts_code2type[value["ts_code"]] = "index"
         return data 
     
     @staticmethod
@@ -136,6 +140,9 @@ class TushareApi:
             time.sleep(1)
             kline_df = client.fund_daily(ts_code=ts_code, start_date=start_date, end_date=end_date)
             update_kline(kline, kline_df)
+        elif TushareApi.__ts_code2type[ts_code] == "index":  # 指数
+            kline_df = client.index_daily(ts_code=ts_code, start_date = start_date)
+            update_kline(kline, kline_df)
         else:
             raise Exception("unknow ts_code: %s" %(ts_code))
         return kline 
@@ -174,7 +181,7 @@ if __name__ == "__main__":
     
     # TushareApi.get_basic_by_ts_code("000001.SZ", start_date= "20200101")
     # TushareApi.get_basic_by_ts_code("513050.SH", start_date= "20200101")
-    kline = TushareApi.get_kline_by_ts_code("000001.SZ", start_date= "20200601", end_date="")
+    kline = TushareApi.get_kline_by_ts_code("000001.SH", start_date= "20200601", end_date="")
     print(len(kline))
     print(kline)
     # for i in range(100):

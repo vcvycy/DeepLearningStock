@@ -54,7 +54,7 @@ class TrainItem():
             返回: 长度为n的数组, 每个位置表示，当前slot，对应的fid_index
         """
         ret = [0] * len(slot2index)
-        assert len(self.fids) == len(slot2index), "fids数量和slot不匹配: %s != %s" %(len(fids), len(slot2index))
+        assert len(self.fids) == len(slot2index), "fids数量和slot不匹配: %s != %s %s vs %s" %(len(self.fids), len(slot2index), self.fids, slot2index)
         for fid in self.fids:
             fid_index = fid2index[fid]
             slot = fid >>54
@@ -127,6 +127,8 @@ class TrainData():
             key = args.get("key") 
             assert key in ins.label, "key %s not in label: %s" %(key, ins)
             label = 0  if ins.label[key] < threshold and ins.label["next_7d_close_price"] < threshold else 1
+            if ins.label["next_3d_min_price"] < -0.15: # 后续3天，最低点跌10个点为负例, 负例多0.5%
+               label = 0
             # label = 0  if ins.label[key] < threshold  else 1
             return label 
 

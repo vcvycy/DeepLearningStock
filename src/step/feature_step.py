@@ -3,6 +3,7 @@ from common.utils import *
 from datetime import datetime
 import math
 from common.tushare_api import *
+from common import resource_manager as RM
 
 class FeatureStep(Step):
     def __init__(self, conf):
@@ -217,6 +218,22 @@ class FeatureStep(Step):
         } 
         return feature
 
+    def get_sh_index_feature(self, context):
+        """
+          上证指数
+        """
+        kline = context.get("source.kline") 
+        # 指数最近1/3/7/14/30天涨跌
+        feature = {}
+        # 保证指数日期和当前采样的k线图一致
+        sh_index_offset = RM.sh_index_date2idx[kline[0].date]
+        for d in [1,3,7,14, 30]:
+            # 上证指数最近d天涨跌
+            feature["rise_%dd" %(d)] = RM.sh_index.get_rise(d, sh_index_offset) 
+            # 最近d天是否跑赢上证指数
+            feature["surpass_%dd" %(d)] = kline.get_rise(d) - RM.sh_index.get_rise(d, sh_index_offset)
+        return feature 
+    
     def _execute(self, context):
         """
           原始特征抽取
@@ -234,7 +251,9 @@ class FeatureStep(Step):
             "boll" : self.get_boll_feature(context),
             "macd" : self.get_macd_feature(context),
             # dense 特征
-            "dense" : self.get_dense_last_n_day(context)
+            "dense" : self.get_dense_last_n_day(context),
+            # 上证指数
+            "sh_index" : self.get_sh_index_feature(context)
         } 
         context.set(self.out_key, feature)
         return 

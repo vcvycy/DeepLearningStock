@@ -1,5 +1,6 @@
 from common import *
 from common.utils import *
+from common import resource_manager as RM
 from source.source_tushare import TushareSource
 import logging
 import argparse

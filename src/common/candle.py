@@ -52,15 +52,15 @@ class Kline():
     def add(self, candle):
         self.candles.append(candle)
         return 
-    
-    def get_rise(self, days = 1):
+
+    def get_rise(self, days = 1, offset = 0):
         """
           获取k线图 days天的涨跌幅
+          offset ~ offset +days -1
         """
-        if days >= len(self):
-            days = len(self) - 1
-        open = self.candles[days].close
-        close = self.candles[0].close
+        assert offset + days < len(self), "get_rise超出大小: %s %s %s" %(self.ts_code, days, offset)
+        open = self.candles[days + offset].close
+        close = self.candles[offset].close
         return close/open - 1
     
     def __getitem__(self, idx):
