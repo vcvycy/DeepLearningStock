@@ -46,34 +46,81 @@ class LineItem:
 # item = LineItem(line)
 # print(item.stock)
 # exit(0)
-# class Stats:
-#     def __init__(self): 
-#         self.tot = {}           # 所有数量
-#         self.corr = {}          # 正例数量
-#         self.raw_label_sum = {} # 原始label
-#         # self.
-#         return 
+class OneStat:
+    def __init__(self):
+        self.tot_ins = 0          # 总数
+        self.pos_ins = 0          # 正例数
+        self.raw_label_sum = 0    # sum(原始label)
+        self.topk_sum = 0         # sum(模型rank)
+        self.topk_avg_label = {}
+        self.output = ""
+        return 
 
-def add_stats(date, label, raw_label, topk):
-    global tot 
-    global corr 
-    global raw_label_sum
-    global thresholds
-    global rank
-    if date not in tot:
-        tot[date] = 0
-        corr[date] = 0
-        rank[date] = 0
-        outputs[date] = ""
-        raw_label_sum[date] = 0
-    tot[date] += 1
-    corr[date] += label
-    rank[date] +=  topk
-    raw_label_sum[date] += raw_label
-    if tot[date] in thresholds: 
-        outputs[date] += "总数: %5d, 真实数量: %5d 正确率: %.2f%% 原始label均值: %.1f%% 平均排名: %.1f\n"  %(tot[date], 
-            corr[date], 100*corr[date]/tot[date], 100* raw_label_sum[date] / tot[date],  rank[date]/tot[date])
-    return 
+    def add(self,line_item):
+        self.tot_ins += 1
+        self.pos_ins += 1 if line_item.label > 0 else 0
+        self.raw_label_sum += line_item.raw_label
+        self.topk_sum += line_item.topk
+
+        thresholds = set([5 * 2**i for i in range(20)])
+        if self.tot_ins in thresholds: 
+            self.gen_one_output()
+        return 
+    def gen_one_output(self):
+        ## 数量达到某个阈值，则生成一条输出
+        self.output += "总数: %5d, 真实数量: %5d 正确率: %.2f%% 原始label均值: %.1f%% 平均排名: %.1f\n"  %(
+            self.tot_ins, 
+            self.pos_ins, 
+            100* self.pos_ins/self.tot_ins, 
+            100* self.raw_label_sum / self.tot_ins,  
+            self.topk_sum/self.tot_ins)
+        self.topk_avg_label[self.tot_ins] = self.raw_label_sum / self.tot_ins
+        return 
+
+class Stats:
+    def __init__(self, prefix = ""):
+        self.prefix = "" 
+        self.key2stat = {}
+        return 
+    def add(self, key, line_item):
+        if key not in self.key2stat:
+            self.key2stat[key] = OneStat()
+        self.key2stat[key].add(line_item)
+        return 
+
+    def output_all(self):
+        """
+          输出所有分析数据
+        """
+        keys = list(self.key2stat)
+        keys.sort(key = lambda x : str(x))
+
+        win_money = []
+        win_keys = []
+        loss_money = []
+        loss_keys = []
+        for key in keys: 
+            print(("%s-%s" %(self.prefix, key)).center(100, "=")) 
+            stat = self.key2stat[key]
+            stat.gen_one_output()
+            print(stat.output)
+            if key != "ALL_TIME":
+                assert stat.tot_ins  < 10000  # 每天的样本数应该 < 10000
+                win = stat.topk_avg_label[5] - stat.topk_avg_label[stat.tot_ins] # 相比pct xx股票利润
+                if win > 0:
+                    win_money.append(win)
+                    win_keys.append(key)
+                else:
+                    loss_money.append(win)
+                    loss_keys.append(key)
+        
+        print("买top 5能跑赢大盘%s天, 平均盈利: %.2f%%, 跑输大盘%s天, 平均跑输: %.2f%%" %(
+            len(win_money), np.mean(win_money) *100,
+            len(loss_money), np.mean(loss_money) *100
+            ))
+        print("跑赢大盘日期: %s" %(win_keys))
+        print("跑输大盘日期: %s" %(loss_keys))
+        return 
 
 def read():
     try:
@@ -82,20 +129,9 @@ def read():
         print("Exception: %s" %(e))
         exit(0)
 
-def process_round(args, round):
-    print('-' * 200)
-    global tot 
-    global corr 
-    global raw_label_sum
-    global rank
-    global outputs
-    tot = {}
-    corr = {}
-    raw_label_sum = {}
-    rank = {}
-    outputs = {}
-    certain_filter_cnt = 0
+def step_read_log(round):
     all_items = []
+    stats = Stats(prefix = "第%s次运行结果" %(round))
     while True: 
         line = read()
         if "END" in line:
@@ -110,20 +146,15 @@ def process_round(args, round):
             # assert item.topk < 1000
         except:
             continue 
-        label = item.label 
-        raw_label = item.raw_label
         if args.show_date:
-            add_stats(item.date, label, raw_label, item.topk) 
-        add_stats("ALL_TIME", label, raw_label, item.topk)
+            stats.add(item.date, item) 
+        stats.add("ALL_TIME", item)
         all_items.append(item)
-    dates = list(tot)
-    dates.sort(key = lambda x : str(x))
-    for date in dates: 
-        print(("第%s次运行结果-%s" %(round,date)).center(100, "=")) 
-        print(outputs[date])
-        print( "总数: %5d, 正例数量: %5d 正确率: %.2f%% 原始label均值: %.1f%% 平均排名: %.1f\n"  %(tot[date], 
-                corr[date], 100*corr[date]/tot[date], 100*raw_label_sum[date] / tot[date],  rank[date]/tot[date]))
-    print("注: 过滤确定性低的股票： %s个" %(certain_filter_cnt))
+    return stats, all_items
+
+def step_analysis(round, stats, all_items):
+    ######## 统计每个key(ALL_TIME or date) 的正确率
+    stats.output_all()
 
     ######### 统计相邻两个天数，但是topk相差很大的样本 ###############
     all_items.sort(key = lambda x: "%s:%s" %(x.stock, x.date))
@@ -162,9 +193,7 @@ def process_round(args, round):
         np.mean([i.label for i in next_items]), 
         np.mean([i.raw_label for i in next_items]), 
         np.mean([i.topk for i in next_items])))
-        
-    # print(all_items[:100])
-    
+    return  
 
 def main(args):
     """
@@ -174,7 +203,9 @@ def main(args):
     round = 0
     while True:
         round += 1
-        process_round(args, round)
+        print('-' * 200)
+        stats, all_items = step_read_log(round)
+        step_analysis(round, stats, all_items) 
 
 if __name__ == "__main__":
     import argparse
