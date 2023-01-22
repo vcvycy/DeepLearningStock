@@ -81,10 +81,19 @@ class PositionDiscrete(BaseMethod):
     def extract(self, fs, conf):
         # assert fs[0] >= fs[1] and fs[0] <= fs[2], "[PositionDiscrete] %s" %(fs)
         step =conf.get("step", 0.1)
+        pos = conf.get("pos","")
         k = (fs[0] - fs[1]) / (fs[2] - fs[1])
         k = max(k, -1)
         k = min(k, 2)
         feature = math.floor(k / step)
+        if len(pos) > 0:   # 人工配置的区间
+            pos = [float(x.strip()) for x in pos.split(",")]
+            for i in range(0, len(pos) -1, 2):
+                l = pos[i]
+                r = pos[i+1]
+                if k >= l and k <= r:
+                    feature = "%s,%s" %(l, r)
+            # print("pos: %s" %(pos))
         return str(feature)
 
 
@@ -129,5 +138,5 @@ if __name__ == "__main__":
     # m = ChangeRateDiscrete()
     # for i in [-3, -2, -1, 0, 1, 2, 3,4]:
     #     print(m([i, 2], {"step" : 1}, 1))
-    m = DateDiffDiscrete()
-    print(m(["20101101", "20221111"], {"max": 128 }, 136))
+    m = PositionDiscrete()
+    print(m([2.2, 0, 10], {"step": 0.2, "pos" : "-0.5, 0.05"}, 136))

@@ -40,7 +40,7 @@ class TushareSource(MultiThreadSource):
             end_date = self.conf.get("end_date", "")
             ts_code = self.all_stocks[stock_idx]["ts_code"]
             kline = TushareApi.get_kline_by_ts_code(ts_code, start_date, end_date)  
-            if kline.reduce("amount", 10, "ma") < 5000:
+            if kline.reduce("amount", 30, "ma") < 5000:
                 # print("%s 成交量太低， 过滤" %(kline.ts_code))
                 self.thread_finish_num +=1 
                 return 0
@@ -82,5 +82,7 @@ class TushareSource(MultiThreadSource):
             if not self.conf.get("enable_etf")  and self.all_stocks[i]["category"] == "etf":
                 # print("disable_etf: ETF: %s被过滤" %(self.all_stocks[i]))
                 continue
+            # if self.all_stocks[i]["category"] != "etf":
+            #     continue
             self.add_thread(TushareSource.gen_contexts_thread_fun, i) 
         return 

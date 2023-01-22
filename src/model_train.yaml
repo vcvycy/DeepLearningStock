@@ -3,17 +3,18 @@ log_file : "../log/model_train.log"
 # max_ins: 10000   # debug，最多读多少数据
 train_files:  # 只读第一个
   # 全量股票
-  - ../training_data/data.bin.20221224_2012
+  - ../training_data/data.bin.20230121_2038
 #预处理instance: 处理label, 过滤fid等
 train_data:
-  validate_date : "20220901"      # 验证集: 没有label且时间在这个后面
+  validate_date : "20221001"      # 验证集: 没有label且时间在这个后面
   label:
     method : binarize
     args: 
       # key : next_14d_mean_price   #
       key : next_14d_close_price   #
       # key : next_7d_14d_mean_price
-      threshold : 0.03   #
+      # threshold : 0.03   #
+      threshold_by_day: True
   min_fid_occurrence : 0    # 每个fid最少出现几次，低于这个次数，程序直接退出报错
   debug:                 # debug 函数
     fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些
@@ -34,7 +35,37 @@ train_data:
       - 82
       - 83
       - 11
-    
+      - 240
+      - 241
+      - 242
+      - 243
+      - 244
+      # - 1
+      # - 5 
+      # - 49
+      # - 52
+      # - 53
+      # - 60
+      # - 62
+      # - 63
+      # - 64
+      # - 80
+      # - 81
+      # - 90
+      # - 92
+      # - 93 
+      # - 101
+      # - 104
+      # - 126
+      # - 128
+      # - 129
+      # - 134 
+      # - 136
+      # - 139
+      # - 150
+      # - 151
+      # - 201 
+      # - 222
 
 
 model: 

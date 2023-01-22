@@ -8,10 +8,15 @@ import tensorflow.compat.v1 as tf
 import logging
 import numpy as np
 import math
+from collections import OrderedDict
+date2thre = {}
 def read_instances(files, max_ins = None):
     if not isinstance(files, list):
         files = [files]
     instances = []
+    date2label = {}
+    date2pos = {}
+    date2neg = {}
     for file in files:
         f = open(file, "rb")
         while True:
@@ -24,12 +29,36 @@ def read_instances(files, max_ins = None):
             #         filter = True
             # if filter:
             #     continue
-            if "ETF" in data.name or "LOF" in data.name:
-                continue
+            # if "ETF" in data.name or "LOF" in data.name:
+            #     continue
+            date = data.date 
+            if "next_14d_close_price" in data.label:
+                date2label[date] = date2label.get(date, [])
+                # if date not date2label :
+                #     date2label[date] = []
+                date2label[date].append(data.label["next_14d_close_price"])
+            if data.label["next_14d_close_price"] > 0.03:
+                date2pos[date] = date2pos.get(date, 0) + 1
+            else:
+                date2neg[date] = date2neg.get(date, 0) + 1
+            # if date2pos.get(date, 0) > 1000 or date2neg.get(date, 0) > 1000:
+            #     continue
             if max_ins is not None and len(instances) >= max_ins:
                 break
             instances.append(data) 
-    # logging.info("第一个Instance: %s" %(instances[0])) 
+    dates = list(date2pos)
+    dates.sort()
+    # for d in dates:
+    #     print("%s 正例: %s 负例: %s" %(d, date2pos.get(d, 0), date2neg.get(d, 0)))
+    # logging.info("第一个Instance: %s" %(instances[0])) \
+    global date2thre
+    for date in dates:
+        if date not in date2label:
+            continue
+        labels = date2label[date]
+        date2thre[date] = np.percentile(labels, 50)   # 每天50分位置
+        print("%s 样本数: %s pct 50 label: %.3f" %(date,len(labels), date2thre[date]))
+    # exit(0)
     logging.info("总训练样本: %s" %(len(instances)))
     return instances
 
@@ -120,15 +149,18 @@ class TrainData():
     def __get_label(self, ins):
         # 获取ins的label值
         # 错误则返回None
+        global date2thre
         def binarize(ins, args):
             #  label二值化
             label = 0
-            threshold = args.get("threshold")
+            if ins.date not in date2thre:
+                return None
+            threshold = max(-0.05, date2thre[ins.date]) #args.get("threshold")
             key = args.get("key") 
             assert key in ins.label, "key %s not in label: %s" %(key, ins)
-            label = 0  if ins.label[key] < threshold and ins.label["next_7d_close_price"] < threshold else 1
-            if ins.label["next_3d_min_price"] < -0.15: # 后续3天，最低点跌10个点为负例, 负例多0.5%
-               label = 0
+            label = 0  if ins.label[key] < threshold else 1 #and ins.label["next_7d_close_price"] < threshold else 1
+            # if ins.label["next_3d_min_price"] < -0.1: # 后续3天，最低点跌10个点为负例, 负例多0.5%
+            #    label = 0
             # label = 0  if ins.label[key] < threshold  else 1
             return label 
 

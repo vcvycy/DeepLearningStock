@@ -83,6 +83,7 @@ class Model():
         # 过dnn，最后一层不会走relu
         l1_reg = None
         for dim in dims[:-1]: 
+            # x = tf.nn.dropout(x, 0.1)
             x = tf.layers.dense(x, dim, activation=tf.nn.relu, kernel_regularizer= l1_reg)
         return tf.layers.dense(x, dims[-1], activation=None, kernel_regularizer= l1_reg)
     def _train(self):

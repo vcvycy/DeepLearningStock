@@ -339,6 +339,7 @@ feature_columns:
     slot : 130
     method : PositionDiscrete 
     args:   
+      pos: -0.05,0.05                     # 支撑位: 最低位-5% ~ +5%附近波动
       step: 0.2
 
   - name : fibonacci_in_90d_200d         # 最近7日平均值, 90d~200d的位置
@@ -346,6 +347,7 @@ feature_columns:
     slot : 131
     method : PositionDiscrete 
     args:   
+      pos: -0.05,0.05                     # 支撑位: 最低位-5% ~ +5%附近波动
       step: 0.2
   
   - name : price_change_10d_ma         # 相比10日均线的位置
@@ -515,50 +517,34 @@ feature_columns:
   #     min: -50
   #     max: 50
   
-  # 240 ~260 上证指数相关
+  # # 240 ~260 上证指数相关
 
-  - name : sh_index_rise_1d         # 指数最近1天涨跌
-    depends : sh_index.rise_1d
+  - name : sh_index_surpass_1d         # 对比上证指数
+    depends : sh_index.surpass_1d
     method : LinearDiscrete 
     slot : 240
     args:   
       start: -0.005
       step: 0.01
-      min: -0.03
-      max: 0.03
+      min: -0.01
+      max: 0.01
 
-  - name : sh_index_rise_3d         # 指数最近3天涨跌
-    depends : sh_index.rise_3d
+  - name : sh_index_surpass_3d         # 对比上证指数
+    depends : sh_index.surpass_3d
     method : LinearDiscrete 
     slot : 241
     args:    
-      step: 0.01
-      min: -0.04
-      max: 0.04
+      start: -0.01
+      step: 0.02
+      min: -0.02
+      max: 0.02
 
-  - name : sh_index_rise_7d         # 指数最近7天涨跌
-    depends : sh_index.rise_7d
+  - name : sh_index_surpass_7d         # 对比上证指数
+    depends : sh_index.surpass_7d
     method : LinearDiscrete 
     slot : 242
     args:    
+      start: -0.01
       step: 0.02
-      min: -0.08
-      max: 0.08
-
-  - name : sh_index_rise_14d         # 指数最近14天涨跌
-    depends : sh_index.rise_14d
-    method : LinearDiscrete 
-    slot : 243
-    args:    
-      step: 0.02
-      min: -0.08
-      max: 0.08
-
-  - name : sh_index_rise_30d         # 指数最近30天涨跌
-    depends : sh_index.rise_30d
-    method : LinearDiscrete 
-    slot : 244
-    args:    
-      step: 0.02
-      min: -0.1
-      max: 0.1
+      min: -0.02
+      max: 0.02

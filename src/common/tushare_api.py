@@ -7,9 +7,10 @@ from common.candle import Candle, Kline
 from common.stock_pb2 import *
 import math
 import time
+import os
 def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切断)
     def wrapper(*args, **kwargs):
-        retry = 3
+        retry = 6
         for i in range(retry):
             if i > 0:
                 time.sleep(20)
@@ -17,7 +18,13 @@ def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切
                 return fun(*args, **kwargs)
             except Exception as e:
                 logging.error("[TushareApi-%s] exception: %s, retry: %s/%s, args: %s" %(fun.__name__, e, i+1, retry, args))
-        raise Exception("[TushareApi] unknown failed")
+                if "抱歉，您每分钟最多访问该接口200次" in str(e):
+                    time.sleep(10)
+                else:
+                    time.sleep(1)
+        # 如果6次都失败则跑到这里
+        raise Exception("[TushareApi] 重试%s次仍未成功 exit" %(retry))
+        os._exit()
     return wrapper
 
 client = ts.pro_api("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f")
@@ -105,8 +112,11 @@ class TushareApi:
                     "amount" : "amount"
                 }
                 for df_attr in df2candle_attr:
-                    candle_attr = df2candle_attr[df_attr]
-                    setattr(c, candle_attr, kline_df.at[i, df_attr]) 
+                    try:
+                        candle_attr = df2candle_attr[df_attr]
+                        setattr(c, candle_attr, kline_df.at[i, df_attr]) 
+                    except Exception as e:
+                        print("[Tushare-api] Exp: %s %s %s" %(e, kline_df, i))
                 if basic_df is not None:
                     assert basic_df.at[i, "trade_date"] == kline_df.at[i, "trade_date"]
                     basic_attr = "turnover_rate,turnover_rate_f,total_mv,circ_mv,volume_ratio,pe,pb".split(",")
@@ -181,7 +191,7 @@ if __name__ == "__main__":
     
     # TushareApi.get_basic_by_ts_code("000001.SZ", start_date= "20200101")
     # TushareApi.get_basic_by_ts_code("513050.SH", start_date= "20200101")
-    kline = TushareApi.get_kline_by_ts_code("000001.SH", start_date= "20200601", end_date="")
+    kline = TushareApi.get_kline_by_ts_code("002840.SZ", start_date= "20200601", end_date="")
     print(len(kline))
     print(kline)
     # for i in range(100):

@@ -27,16 +27,28 @@ if __name__ == "__main__":
         if args.date is not None and ins.date != args.date:
             continue
 
-        if "ETF" in ins.name or "LOF" in ins.name:
+        # if "ETF" in ins.name or "LOF" in ins.name:
+        #     continue
+        skip = False
+        contain = 0
+        for fc in ins.feature:
+            # if fc.slot == 101 and int(fc.extracted_features[0]) < 6:
+            #     skip = True
+            #     break
+            # if fc.slot == 50 and int(fc.extracted_features[0]) < 2:
+            #     skip = True
+            #     break
+            # if fc.slot == 131 and int(fc.extracted_features[0]) > -2:
+            #     skip = True
+            #     break
+            # if fc.slot in [101, 50, 151]:
+            #     print("%s %s" %(int(fc.extracted_features[0]), fc.slot))
+            #     input('..')
+            for fid in fc.fids:
+                if fid in contain_fids:
+                    contain += 1
+        if contain < len(contain_fids) or skip:
             continue
-        if args.fids != "":
-            contain = 0
-            for fc in ins.feature:
-                for fid in fc.fids:
-                    if fid in contain_fids:
-                        contain += 1
-            if contain < len(contain_fids):
-                continue
         slots = set([])
         for fc in ins.feature:
             for fid in fc.fids:
@@ -44,8 +56,7 @@ if __name__ == "__main__":
         print("slots: %s(%s)" %(len(slots), slots))
         print('-'* 50 + str(i+1) + '-'*50)
         print(ins)
-        print(ins.total_mv)
-        print(ins.name)
+        print("名字: %s 市值: %s" %(ins.name, ins.total_mv))
         input("press any key to continue...")
 
     # suffix = timestamp2str(time.time(), "%Y%m%d_%H")

@@ -93,6 +93,7 @@ class FeatureStep(Step):
             "low_3d" : kline.reduce("low", 3, "min"),
             "high_7d" : kline.reduce("high", 7, "max"),
             "low_7d" : kline.reduce("low", 7, "min"),
+            "high_180d" : kline.reduce("high", 180, "max"),
 
             "high_7d_14d" : kline.reduce("high", 14, "max", offset = 7),
             "low_7d_14d" : kline.reduce("low", 14, "min", offset = 7),
