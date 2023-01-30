@@ -3,7 +3,7 @@ log_file : "../log/model_train.log"
 # max_ins: 10000   # debug，最多读多少数据
 train_files:  # 只读第一个
   # 全量股票
-  - ../training_data/data.bin.20230121_2038
+  - ../training_data/data.bin.20230128_1117
 #预处理instance: 处理label, 过滤fid等
 train_data:
   validate_date : "20221001"      # 验证集: 没有label且时间在这个后面

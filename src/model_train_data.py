@@ -9,58 +9,7 @@ import logging
 import numpy as np
 import math
 from collections import OrderedDict
-date2thre = {}
-def read_instances(files, max_ins = None):
-    if not isinstance(files, list):
-        files = [files]
-    instances = []
-    date2label = {}
-    date2pos = {}
-    date2neg = {}
-    for file in files:
-        f = open(file, "rb")
-        while True:
-            size, data = read_file_with_size(f, Instance)
-            if size == 0:
-                break
-            # filter = False
-            # for fc in data.feature:
-            #     if 43705056829054412 in fc.fids:
-            #         filter = True
-            # if filter:
-            #     continue
-            # if "ETF" in data.name or "LOF" in data.name:
-            #     continue
-            date = data.date 
-            if "next_14d_close_price" in data.label:
-                date2label[date] = date2label.get(date, [])
-                # if date not date2label :
-                #     date2label[date] = []
-                date2label[date].append(data.label["next_14d_close_price"])
-            if data.label["next_14d_close_price"] > 0.03:
-                date2pos[date] = date2pos.get(date, 0) + 1
-            else:
-                date2neg[date] = date2neg.get(date, 0) + 1
-            # if date2pos.get(date, 0) > 1000 or date2neg.get(date, 0) > 1000:
-            #     continue
-            if max_ins is not None and len(instances) >= max_ins:
-                break
-            instances.append(data) 
-    dates = list(date2pos)
-    dates.sort()
-    # for d in dates:
-    #     print("%s 正例: %s 负例: %s" %(d, date2pos.get(d, 0), date2neg.get(d, 0)))
-    # logging.info("第一个Instance: %s" %(instances[0])) \
-    global date2thre
-    for date in dates:
-        if date not in date2label:
-            continue
-        labels = date2label[date]
-        date2thre[date] = np.percentile(labels, 50)   # 每天50分位置
-        print("%s 样本数: %s pct 50 label: %.3f" %(date,len(labels), date2thre[date]))
-    # exit(0)
-    logging.info("总训练样本: %s" %(len(instances)))
-    return instances
+from common.model_resource_manager import get_rm
 
 class TrainItem():
     def __init__(self, fids, label, raw_label, name2dense, date = "", ts_code = "", name = ""):
@@ -92,9 +41,9 @@ class TrainItem():
         return ret
     
 class TrainData():
-    def __init__(self, instances, conf):
-        self.instances = instances
-        self.conf = conf 
+    def __init__(self):
+        self.instances = get_rm().instances
+        self.conf = get_rm().conf.get("train_data") 
         debug = self.conf.get("debug")
         self.validate_date = self.conf.get("validate_date", "")
         self.fid_whitelist =  set(debug.get("fid_whitelist") if debug.get("fid_whitelist") else [])    # 如果不为空，则只有这里的fid才会跑
@@ -149,7 +98,7 @@ class TrainData():
     def __get_label(self, ins):
         # 获取ins的label值
         # 错误则返回None
-        global date2thre
+        date2thre = get_rm().date2thre
         def binarize(ins, args):
             #  label二值化
             label = 0

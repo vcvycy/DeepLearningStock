@@ -59,7 +59,7 @@ class FeatureStep(Step):
         feature = {}
         for d in [1, 3, 7, 14]:           
             # 最近d天的最高价格，是过去多少天的最高价格
-            high_nd = kline.reduce("high", d, "max")
+            high_nd = kline.reduce("close", d, "max") # 收盘价
             feature["%dd" %(d)] = len(kline) -d +1    # 找不到的默认值
             for i in range(d, len(kline)):
                 if kline[i].high > high_nd:
@@ -105,6 +105,7 @@ class FeatureStep(Step):
             "low_90d_200d" : kline.reduce("low", 200, "min", offset = 90),
             # 均价
             "open" : kline[0].open,
+            "pre_close" : kline[0].pre_close,
             "close" : kline[0].close,                             #  收盘价 
             "close_ma_3d" : kline.reduce("close", 3, "ma"),      # 3日均价
             "close_ma_5d" : kline.reduce("close", 5, "ma"),      # 5日均价

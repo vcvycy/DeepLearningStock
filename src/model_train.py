@@ -1,6 +1,7 @@
 # 模型训练
 from common.utils import *
 from common.stock_pb2 import *
+from common.model_resource_manager import get_rm, init_singleton_rm
 import logging
 import yaml
 import random
@@ -13,10 +14,10 @@ import time
 # time.sleep(3600*2)
 
 class Model():
-    def __init__(self, conf, train_data):
-        self.conf = conf
-        self.train_data = train_data
-        self.fid_num = train_data.get_fid_num()
+    def __init__(self):
+        self.conf = get_rm().conf.get("model")
+        self.train_data = TrainData()
+        self.fid_num = self.train_data.get_fid_num()
         self.losses = []
         self.sess = tf.Session()
         self.writer = tf.summary.FileWriter("./tboard/", self.sess.graph)  
@@ -67,7 +68,7 @@ class Model():
         else:
             raise Exception("unknown loss_type: %s" %(loss_type))
         self.get_certrain_prob()
-        loss *= self.certainly
+        # loss *= self.certainly
         loss = tf.reduce_sum(loss, name = "loss")
         return pred, loss
     
@@ -95,8 +96,8 @@ class LRModel(Model):
     """
       LR模型
     """
-    def __init__(self, conf, train_data):
-        super(LRModel, self).__init__(conf, train_data)
+    def __init__(self):
+        super(LRModel, self).__init__()
         return 
     def _init_sparse_embedding(self):
         bias_num = self.fid_num
@@ -288,7 +289,8 @@ class LRModel(Model):
             fid_val_pair = [(fid, fid2bias_val.get(fid, -1)) for fid in fids]
             fid_val_pair.sort(key= lambda x : -x[1])
             return fid_val_pair[:k]
-        items = self.train_data.validate_items
+        train_data = self.train_data
+        items = train_data.validate_items
         logging.info("开始预估股票: {}".format(len(items)).center(100, "="))
         # # tscode, date, TrainItem
         results = []   # ts_code, date, pred
@@ -335,21 +337,10 @@ class LRModel(Model):
 
 if __name__ == "__main__":
     ## 载入yaml配置文件
-    conf = yaml.safe_load(open("model_train.yaml", 'r') .read())
-    files = conf.get("train_files")
-    suffix = files[0].split(".")[-1] 
-    log_file = "%s.%s" %(conf.get("log_file"), suffix)
-    logging.basicConfig(filename=log_file, format = '%(levelname)s %(asctime)s %(message)s', level=logging.DEBUG)
-    # 载入instance
-    logging.info("START")
-    logging.info("conf: %s" %(conf)) 
-    instances = read_instances(files, conf.get("max_ins"))
-    # 预处理instance: 处理label, 过滤fid等
-    train_data = TrainData(instances, conf.get("train_data"))  
-
+    init_singleton_rm("model_train.yaml")
     # 所有Fid的数量，用于模型初始化embedding/bias
-    model = LRModel(conf.get("model"), train_data)
+    model = LRModel()
     model.train()
     model.validate()
     logging.info("END")
-    print(" python test_parse_log.py  < %s" %(log_file))
+    print(" python test_parse_log.py  < %s" %(get_rm().log_file))

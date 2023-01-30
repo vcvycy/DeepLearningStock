@@ -195,9 +195,18 @@ feature_columns:
       min : -0.4
       max : 0
   
+  - name : open_cmp_pre_close         # 高开还是低开
+    depends : price.close, price.pre_close
+    method : ChangeRateDiscrete 
+    slot : 66
+    args:   
+      step: 0.03
+      min : -0.1
+      max : 0.1
+  
 
   # 高点突破: slot 80~89  低点反弹 slot 90~99
-  - name :   last_1d_ath       # 过去n天的最高点，是往前多少天的最高
+  - name :   last_1d_ath       # 过去n天的最高收盘价，是往前多少天的最高
     depends : ath.1d
     slot : 80
     method : LogDiscrete 

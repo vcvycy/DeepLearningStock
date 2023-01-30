@@ -79,7 +79,7 @@ class OneStat:
 
 class Stats:
     def __init__(self, prefix = ""):
-        self.prefix = "" 
+        self.prefix = prefix 
         self.key2stat = {}
         return 
     def add(self, key, line_item):
@@ -100,10 +100,11 @@ class Stats:
         loss_money = []
         loss_keys = []
         for key in keys: 
-            print(("%s-%s" %(self.prefix, key)).center(100, "=")) 
             stat = self.key2stat[key]
             stat.gen_one_output()
-            print(stat.output)
+            if key == "ALL_TIME" or args.show_date:
+                print(("%s-%s" %(self.prefix, key)).center(100, "=")) 
+                print(stat.output)
             if key != "ALL_TIME":
                 assert stat.tot_ins  < 10000  # 每天的样本数应该 < 10000
                 win = stat.topk_avg_label[5] - stat.topk_avg_label[stat.tot_ins] # 相比pct xx股票利润
@@ -146,8 +147,7 @@ def step_read_log(round):
             # assert item.topk < 1000
         except:
             continue 
-        if args.show_date:
-            stats.add(item.date, item) 
+        stats.add(item.date, item) 
         stats.add("ALL_TIME", item)
         all_items.append(item)
     return stats, all_items
@@ -155,7 +155,7 @@ def step_read_log(round):
 def step_analysis(round, stats, all_items):
     ######## 统计每个key(ALL_TIME or date) 的正确率
     stats.output_all()
-
+    # return
     ######### 统计相邻两个天数，但是topk相差很大的样本 ###############
     all_items.sort(key = lambda x: "%s:%s" %(x.stock, x.date))
     i = 0
@@ -195,7 +195,7 @@ def step_analysis(round, stats, all_items):
         np.mean([i.topk for i in next_items])))
     return  
 
-def main(args):
+def main():
     """
       stock = None, 全部股票一起算，且分天看
       stock != None : 看当前股票
@@ -214,4 +214,4 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--show-date', action='store_true')
     parser.add_argument('-c', '--certainly-threshold', type=float, default = 0)
     args = parser.parse_args()
-    main(args)
+    main()

@@ -47,14 +47,22 @@ def read_file_with_size(f, PBClass = None):
         data = obj
     return data_size, data
 
-def enum_instance(path):
+def enum_instance(path, max_ins = 1e10):
+    """
+      path : 训练文件，可以单个，或者多个
+      max_ins: 最多读取多少样本
+    """
     from common.stock_pb2 import Instance
-    f = open(path, "rb")
-    while True:
-        size, data = read_file_with_size(f, Instance)
-        if size == 0:
-            break
-        yield data
+    if not isinstance(path, list):
+        path = [path]
+    for p in path:
+        f = open(p, "rb")
+        while True:
+            size, data = read_file_with_size(f, Instance)
+            if size == 0 or max_ins <= 0:
+                break
+            max_ins -= 1
+            yield data
     return 
 
 
