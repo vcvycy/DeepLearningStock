@@ -1,12 +1,15 @@
 log_file : "../log/model_train.log"
 
-# max_ins: 10000   # debug，最多读多少数据
+# max_ins: 50000   # debug，最多读多少数据
 train_files:  # 只读第一个
   # 全量股票
-  - ../training_data/data.bin.20230128_1117
+  # - ../training_data/data.weekly.20230131_1918
+  - ../training_data/data.daily.20230131_2204
+  - ../training_data/data.bin.20230130_1743
 #预处理instance: 处理label, 过滤fid等
 train_data:
-  validate_date : "20221001"      # 验证集: 没有label且时间在这个后面
+  train_ins_percent: 0.8          # 训练集占比(优先于下面这个参数)
+  # validate_date : "20220101"      # 验证集: 没有label且时间在这个后面
   label:
     method : binarize
     args: 

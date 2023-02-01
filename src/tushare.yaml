@@ -9,8 +9,8 @@ source:                 # 从哪些地方获取数据
       api_key: 009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f
       start_date:            "20200601"  # 620个交易日
       end_date  :            ""
-      max_workers:           15     # 线程池数量
-      sample_recent_days:    400  # 每个股票采样多少个样本
+      max_workers:           5     # 线程池数量
+      sample_recent_days:    1  # 每个股票采样多少个样本
       sample_min_train_days: 200    # 至少N天数据作为训练数据
       enable_etf : False            # etf是否加入
       skip_st:     True             # 是否过滤ST  
@@ -52,7 +52,7 @@ step:
       path: step.write_instance_step
       class: WriteInstanceStep
       args:
-        save_path  : "../training_data/data.bin"  # 保存的文件 
+        save_path  : "../training_data/data.daily"  # 保存的文件 
         date_suffix : "%Y%m%d_%H%M"                 
         cache_size : 10000    # N个instance写一次文件
         write_raw_feature: True # 是否写raw_feature, 用于Debug

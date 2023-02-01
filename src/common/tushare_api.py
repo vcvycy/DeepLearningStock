@@ -96,27 +96,43 @@ class TushareApi:
     
     @staticmethod
     @TushareDecorator
+    def get_kline_by_ts_code_weekly(ts_code, start_date = "", end_date = ""):
+        global client
+        def update_kline(kline, kline_df):
+            for i in range(kline_df.shape[0]):
+                c = Candle(
+                    date = kline_df.at[i, "trade_date"],
+                    open = kline_df.at[i, "open"],
+                    high = kline_df.at[i, "high"],
+                    low = kline_df.at[i, "low"],
+                    close = kline_df.at[i, "close"],
+                    pre_close = kline_df.at[i, "pre_close"],
+                    amount = kline_df.at[i, "amount"],
+                    vol = kline_df.at[i, "vol"]
+                ) 
+                kline.add(c)
+            return 
+        kline = Kline(ts_code = ts_code) 
+        if TushareApi.__ts_code2type[ts_code] == "stock":
+            kline_df =  client.weekly(ts_code=ts_code, start_date=start_date, end_date=end_date, 
+                                    fields='ts_code,trade_date,pre_close,open,high,low,close,vol,amount')
+            update_kline(kline, kline_df)
+        return kline
+    @staticmethod
+    @TushareDecorator
     def get_kline_by_ts_code(ts_code, start_date = "", end_date = ""):
         def update_kline(kline, kline_df, basic_df = None):
             for i in range(kline_df.shape[0]):
-                c = Candle()
-                df2candle_attr = {    # dataframe的名字映射到canlde的名字中
-                    "high" : "high",
-                    "low" : "low", 
-                    "open" : "open", 
-                    "close" : "close", 
-                    "pre_close" : "pre_close", 
-                    "high" : "high", 
-                    "trade_date" : "date",
-                    "vol" : "vol",
-                    "amount" : "amount"
-                }
-                for df_attr in df2candle_attr:
-                    try:
-                        candle_attr = df2candle_attr[df_attr]
-                        setattr(c, candle_attr, kline_df.at[i, df_attr]) 
-                    except Exception as e:
-                        print("[Tushare-api] Exp: %s %s %s" %(e, kline_df, i))
+                c = Candle(
+                    date = kline_df.at[i, "trade_date"],
+                    open = kline_df.at[i, "open"],
+                    high = kline_df.at[i, "high"],
+                    low = kline_df.at[i, "low"],
+                    close = kline_df.at[i, "close"],
+                    pre_close = kline_df.at[i, "pre_close"],
+                    amount = kline_df.at[i, "amount"],
+                    vol = kline_df.at[i, "vol"]
+                ) 
                 if basic_df is not None:
                     assert basic_df.at[i, "trade_date"] == kline_df.at[i, "trade_date"]
                     basic_attr = "turnover_rate,turnover_rate_f,total_mv,circ_mv,volume_ratio,pe,pb".split(",")
@@ -126,7 +142,8 @@ class TushareApi:
                             if k == "turnover_rate_f":
                                 value = basic_df.at[i, "turnover_rate"] * basic_df.at[i, "total_mv"] / basic_df.at[i, "circ_mv"]
                         setattr(c, k, value) 
-                kline.add(c) 
+                kline.add(c)
+            return 
         global client
         kline = Kline(ts_code = ts_code) 
         # 从tushare获取k线图: 未复权
@@ -191,16 +208,25 @@ if __name__ == "__main__":
     
     # TushareApi.get_basic_by_ts_code("000001.SZ", start_date= "20200101")
     # TushareApi.get_basic_by_ts_code("513050.SH", start_date= "20200101")
-    kline = TushareApi.get_kline_by_ts_code("002840.SZ", start_date= "20200601", end_date="")
-    print(len(kline))
-    print(kline)
+    # kline = TushareApi.get_kline_by_ts_code("300711.SZ", start_date= "20200601", end_date="")
+    # print(len(kline))
+    # print(kline)
+    # print(kline.get_ma_reverse_times(k = 30))
+    kline = TushareApi.get_kline_by_ts_code_weekly("000001.SZ", start_date= "20100601", end_date="")
+    print(kline[0])
+    # print(kline.reduce("close", 30, "ma"))
+    # print(kline[0])
+    # print(kline[1])
+    # print(kline.get_ma_reverse_times(k = 30))
+    # print(len(kline))
+    # print(kline)
     # for i in range(100):
     #     print("%s %s" %(kline[i].date, kline.get_macd(i)))
     # for i in kline:
     #     print(i)
     # kline.draw()
     # for item in TushareApi.get_all_stocks():
-    #     if "688076" in item["ts_code"]:
+    #     if "000001" in item["ts_code"]:
     #         print(item)
     # kline = TushareApi.get_kline_by_ts_code("513050.SH", start_date="", end_date = '20221212')
     # kline.draw() 

@@ -39,7 +39,10 @@ class TushareSource(MultiThreadSource):
             start_date = self.conf.get("start_date")
             end_date = self.conf.get("end_date", "")
             ts_code = self.all_stocks[stock_idx]["ts_code"]
-            kline = TushareApi.get_kline_by_ts_code(ts_code, start_date, end_date)  
+            if self.conf.get("weekly") == True:
+                kline = TushareApi.get_kline_by_ts_code_weekly(ts_code, start_date, end_date)  
+            else:
+                kline = TushareApi.get_kline_by_ts_code(ts_code, start_date, end_date)  
             if kline.reduce("amount", 30, "ma") < 5000:
                 # print("%s 成交量太低， 过滤" %(kline.ts_code))
                 self.thread_finish_num +=1 
@@ -65,7 +68,7 @@ class TushareSource(MultiThreadSource):
                 self.add_context(context) 
                 ctx_num += 1
         except Exception as e:
-            print("exp: %s" %(e))
+            print("exp: gen_contexts_thread_fun %s" %(e))
         self.thread_finish_num +=1 
         return ctx_num
 

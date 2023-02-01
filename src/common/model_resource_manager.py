@@ -34,7 +34,20 @@ class RM:
 
         self.all_dates = list(date2labels)
         self.all_dates.sort()
-
+        # 获取验证集的日期
+        train_ins_percent = self.conf.get("train_data").get("train_ins_percent")
+        if train_ins_percent is not None:
+            train_ins_num = 0
+            for date in self.all_dates:
+                if train_ins_num >= train_ins_percent * len(self.instances):
+                    self.validate_date = date
+                    break
+                train_ins_num += len(date2labels.get(date, []))
+            logging.info("训练集占比: %s 训练集样本数量: %s / %s" %(train_ins_percent, train_ins_num, len(self.instances)))
+        else:
+            self.validate_date = self.conf.get("train_data").get("validate_date")
+        logging.info("验证集开始时间: %s" %(self.validate_date))
+        # 每个日期对应的大盘均值
         for date in self.all_dates: 
             labels = date2labels[date]
             self.date2thre[date] = np.percentile(labels, 50)   # 每天50分位置

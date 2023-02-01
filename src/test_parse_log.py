@@ -1,11 +1,6 @@
 import re, math
-import numpy as np
-tot = {}
-corr = {}
-raw_label_sum = {}
-rank = {}
-outputs = {}
-thresholds = set([20 * 2**i for i in range(20)])
+import numpy as np 
+
 class LineItem:
     """
       解析数据：
@@ -62,7 +57,7 @@ class OneStat:
         self.raw_label_sum += line_item.raw_label
         self.topk_sum += line_item.topk
 
-        thresholds = set([5 * 2**i for i in range(20)])
+        thresholds = set([2**i for i in range(20)])
         if self.tot_ins in thresholds: 
             self.gen_one_output()
         return 
@@ -95,47 +90,53 @@ class Stats:
         keys = list(self.key2stat)
         keys.sort(key = lambda x : str(x))
 
-        win_money = []
-        win_keys = []
-        loss_money = []
-        loss_keys = []
         for key in keys: 
             stat = self.key2stat[key]
             stat.gen_one_output()
             if key == "ALL_TIME" or args.show_date:
                 print(("%s-%s" %(self.prefix, key)).center(100, "=")) 
                 print(stat.output)
-            if key != "ALL_TIME":
-                assert stat.tot_ins  < 10000  # 每天的样本数应该 < 10000
-                win = stat.topk_avg_label[5] - stat.topk_avg_label[stat.tot_ins] # 相比pct xx股票利润
-                if win > 0:
-                    win_money.append(win)
-                    win_keys.append(key)
-                else:
-                    loss_money.append(win)
-                    loss_keys.append(key)
-        
-        print("买top 5能跑赢大盘%s天, 平均盈利: %.2f%%, 跑输大盘%s天, 平均跑输: %.2f%%" %(
-            len(win_money), np.mean(win_money) *100,
-            len(loss_money), np.mean(loss_money) *100
-            ))
-        print("跑赢大盘日期: %s" %(win_keys))
-        print("跑输大盘日期: %s" %(loss_keys))
+        for buy_topk in [1, 2,4, 8]:
+            win_money = []
+            win_keys = []
+            loss_money = []
+            loss_keys = []
+            for key in keys: 
+                stat = self.key2stat[key]
+                if key != "ALL_TIME":
+                    assert stat.tot_ins  < 10000, "key = %s total ins = %s" %(key, stat.tot_ins)  # 每天的样本数应该 < 10000
+                    win = stat.topk_avg_label[buy_topk] - stat.topk_avg_label[stat.tot_ins] # 每天买topk股票 vs 每日大盘指标的收益
+                    if win > 0:
+                        win_money.append(win)
+                        win_keys.append(key)
+                    else:
+                        loss_money.append(win)
+                        loss_keys.append(key)
+            print("买top %s 【日平均收益: %.2f%%】,  能跑赢大盘%s天, 平均盈利: %.2f%%, 跑输大盘%s天, 平均跑输: %.2f%%" %(
+                buy_topk, np.mean(win_money + loss_money) * 100,
+                len(win_money), np.mean(win_money) *100,
+                len(loss_money), np.mean(loss_money) *100
+                ))
+            print("    跑赢大盘日期: %s" %(win_keys))
+            print("    跑输大盘日期: %s" %(loss_keys))
         return 
 
 def read():
     try:
         return input("")
+    except EOFError:
+        print("log文件结束!")
+        exit(0)
     except Exception as e:
         print("Exception: %s" %(e))
         exit(0)
 
-def step_read_log(round):
+def step_read_log(round, end_when = "END"):
     all_items = []
     stats = Stats(prefix = "第%s次运行结果" %(round))
     while True: 
         line = read()
-        if "END" in line:
+        if end_when in line:
             print("END")
             break
         if "conf" in line:
@@ -204,7 +205,10 @@ def main():
     while True:
         round += 1
         print('-' * 200)
-        stats, all_items = step_read_log(round)
+        stats, all_items = step_read_log(round, end_when = "END")
+        if len(all_items) == 0:
+            continue
+        # input("all_item: %s" %(len(all_items)))
         step_analysis(round, stats, all_items) 
 
 if __name__ == "__main__":

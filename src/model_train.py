@@ -80,13 +80,36 @@ class Model():
           mini-batch为TrainItem数组, 转化为feed dict
         """
         pass
-    def dense_tower(self, x, dims):
-        # 过dnn，最后一层不会走relu
-        l1_reg = None
+    
+    def _get_variable(self, name, shape,initializer = tf.keras.initializers.he_normal()):\
+        return tf.get_variable(name,
+                            shape=shape,
+                            initializer=initializer)
+    def fc(self,x,num,name):
+        x_num=x.get_shape()[1].value
+        weight_shape=[x_num,num]
+        bias_shape  =[num]
+        weight=self._get_variable("%s/weight" %(name),shape=weight_shape)
+        bias  =self._get_variable("%s/bias" %(name),shape=bias_shape)
+        self.emit("%s/weight" %(name), weight)
+        self.emit("%s/bias" %(name), bias)
+        y=tf.add(tf.matmul(x,weight),bias,name=name)
+        return y 
+    # def dense_tower(self, x, dims):
+    #     # 过dnn，最后一层不会走relu
+    #     l1_reg = None
+    #     for dim in dims[:-1]: 
+    #         # x = tf.nn.dropout(x, 0.1)
+    #         x = tf.layers.dense(x, dim, activation=tf.nn.relu, kernel_regularizer= l1_reg)
+    #     return tf.layers.dense(x, dims[-1], activation=None, kernel_regularizer= l1_reg)
+    def dense_tower(self, x, dims, name ):
+        layer = 1
         for dim in dims[:-1]: 
-            # x = tf.nn.dropout(x, 0.1)
-            x = tf.layers.dense(x, dim, activation=tf.nn.relu, kernel_regularizer= l1_reg)
-        return tf.layers.dense(x, dims[-1], activation=None, kernel_regularizer= l1_reg)
+            x = self.fc(x, dim, "dense_tower/%s/%s" %(name, layer))
+            x = tf.nn.relu(x)
+            self.emit("dense_tower/%s/%s/zero_fraction" %(name, layer), tf.nn.zero_fraction(x))
+            layer += 1
+        return self.fc(x, dims[-1], "dense_tower/%s/%s" %(name, layer))
     def _train(self):
         raise Exception("need override")
     def train(self):
@@ -99,17 +122,29 @@ class LRModel(Model):
     def __init__(self):
         super(LRModel, self).__init__()
         return 
+    
+    def get_slot_concat_embedding(self, name, gather = True):
+        weight_initer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
+        all_fid_embed =  tf.get_variable(name=name, dtype=tf.float32, shape=[self.fid_num], initializer=weight_initer)
+        self.emit("all_fid_embed/%s" %(name), all_fid_embed)
+        if gather:
+            slot_embed = tf.gather(all_fid_embed, self.slot_bias_fid_index) 
+            self.emit("slot_embedding/%s" %(name), slot_embed)
+            return slot_embed
+        else:
+            return all_fid_embed
+        
     def _init_sparse_embedding(self):
         bias_num = self.fid_num
         # weight_initer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
-        self.sparse_bias = tf.get_variable(name="bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
-        self.certain_bias = tf.get_variable(name="certain_bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
+        self.sparse_bias = self.get_slot_concat_embedding("bias", gather = False) # tf.get_variable(name="bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
+        self.certain_bias =  self.get_slot_concat_embedding("certain_bias") # tf.get_variable(name="certain_bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
         logging.info("bias num: %s %s" %(bias_num, self.sparse_bias)) 
         return 
 
     def get_certrain_prob(self):
         # 每个样本的确定性, 为0.5 ~1.5对loss加权， 确定性高的loss大，低的loss小
-        input = tf.gather(self.certain_bias, self.slot_bias_fid_index) 
+        input = self.certain_bias
         logits = tf.reduce_sum(input, axis = 1)
         self.emit("certainly/logits", logits)
         certainly_raw= tf.sigmoid(logits) + 0.2
@@ -135,8 +170,6 @@ class LRModel(Model):
             self.global_bias = tf.get_variable(name="global_bias", dtype=tf.float32, shape=[1], initializer=tf.zeros_initializer())
         else:
             self.global_bias = tf.constant(0, dtype=tf.float32)
-        # 每个slot对应的fid下标
-        self.slot_bias_fid_index = tf.placeholder(tf.int32, [None, slot_num], name="slot_bias_fid_index")  # 长度为所有fid数量， 1表示有这个Fid， 0表示没有这个fid
         # ins_fid_num = tf.reduce_sum(bias_fid_gate, axis = 1)                          # 每个instance有多少fid
         bias_input = tf.gather(self.sparse_bias, self.slot_bias_fid_index)                                # 乘以开关
         logging.info("[BuildDenseNN]dense model: %s fid_index: %s bias_input: %s" %(self.sparse_bias, 
@@ -147,16 +180,16 @@ class LRModel(Model):
         if self.conf.get("dense_30d"):
             self.last_30d_close = tf.placeholder(tf.float32, [None, 30], name="last_30d_close")  # 长度为所有fid数量， 1表示有这个Fid， 0表示没有这个fid
             self.emit("last_30d_close", self.last_30d_close)
-            last_30d_nn_out = tf.reduce_sum(self.dense_tower(self.last_30d_close, [8, 1]), axis = 1)
+            last_30d_nn_out = tf.reduce_sum(self.dense_tower(self.last_30d_close, [8, 1], name="dense_30d"), axis = 1)
             self.emit("logits/last_30d_out", last_30d_nn_out)
             logits += last_30d_nn_out
         
         # 过Dense nn, 得到pred和loss
         if self.conf.get("bias_attention"):
-            bias_attention = tf.nn.softmax(self.dense_tower(bias_input, [8, slot_num]))
+            bias_attention = tf.nn.sigmoid(self.dense_tower(self.get_slot_concat_embedding("attn_raw_embed"), [8, slot_num], name="bias_attn"))
             self.emit("bias_attention", bias_attention)
-            bias_input *= bias_attention
-            bias_sum = tf.reduce_sum(bias_input, axis = 1)
+            bias_input_attn = bias_input * bias_attention
+            bias_sum = tf.reduce_mean(bias_input_attn, axis = 1)
             # 每个slot监控
             attn_transpose = tf.transpose(bias_attention)
             slot2index = self.train_data.slot2idx
@@ -165,12 +198,12 @@ class LRModel(Model):
                 slot = index2slot[idx]
                 self.emit("attention/slot_%s_idx_%s" %(slot, idx), attn_transpose[idx])
         else:
-            bias_sum = tf.reduce_sum(bias_input, axis = 1)
+            bias_sum = tf.reduce_mean(bias_input, axis = 1)
         logits += bias_sum + self.global_bias
         self.emit("logit/bias_sum", bias_sum)
         if isinstance(self.conf.get("bias_nn_dims"), list):
             dims = self.conf.get("bias_nn_dims")
-            nn_out = tf.reduce_sum(self.dense_tower(bias_input, dims), axis = 1)
+            nn_out = tf.reduce_sum(self.dense_tower(bias_input, dims, name="bias_nn"), axis = 1)
             self.emit("logit/bias_nn_out", nn_out)
             logits += nn_out
             # self.losses.append(tf.reduce_sum(nn_out) * 1e-5)
@@ -209,6 +242,9 @@ class LRModel(Model):
     
     def _train(self):
         # 初始化embedding : fid_index -> embedding的映射
+        # 每个slot对应的fid下标
+        slot_num = len(self.train_data.slots)
+        self.slot_bias_fid_index = tf.placeholder(tf.int32, [None, slot_num], name="slot_bias_fid_index")  # 长度为所有fid数量， 1表示有这个Fid， 0表示没有这个fid
         self._init_sparse_embedding() 
         # 建图
         logits = self._build_dense_nn()

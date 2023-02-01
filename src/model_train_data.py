@@ -45,7 +45,6 @@ class TrainData():
         self.instances = get_rm().instances
         self.conf = get_rm().conf.get("train_data") 
         debug = self.conf.get("debug")
-        self.validate_date = self.conf.get("validate_date", "")
         self.fid_whitelist =  set(debug.get("fid_whitelist") if debug.get("fid_whitelist") else [])    # 如果不为空，则只有这里的fid才会跑
         self.slot_whitelist =  set(debug.get("slot_whitelist") if debug.get("slot_whitelist") else [])    # 如果不为空，则只有这里的fid才会跑
         self.slot_blacklist =  set(debug.get("slot_blacklist") if debug.get("slot_blacklist") else [])    # 如果不为空，则只有这里的fid才会跑
@@ -141,7 +140,7 @@ class TrainData():
                 if len(fc.dense) > 0:
                     name2dense[fc.name] = fc.dense
             label, raw_label = self.__get_label(ins)
-            if label is not None and ins.date < self.validate_date:
+            if label is not None and ins.date < get_rm().validate_date:
                 train_item = TrainItem(fids, label, raw_label, name2dense)
                 self.train_items.append(train_item)
                 self.train_item_weights.append(self.__init_train_item_sample_weight(train_item))  # 训练样本权重

@@ -36,7 +36,7 @@ class WriteInstanceStep(Step):
         ins.ts_code = context.get("source.ts_code")
         ins.date = context.get("source.train_date")
         total_mv = context.get("raw_feature.basic.total_mv") 
-        ins.total_mv = 0 if total_mv == "EMPTY" else int(total_mv)
+        ins.total_mv = 0 if total_mv is None or total_mv == "EMPTY" else int(total_mv)
         # fid
         feature2data = context.get("fids")
         for key in feature2data:

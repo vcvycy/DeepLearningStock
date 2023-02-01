@@ -20,12 +20,21 @@ class MACD():
     
 class Candle(): 
     CommonAttr = [
-        "time", "open", "high", "low", "close", "amount", "vol", "turnover_rate", "turnover_rate_f", "pre_close", "pe", "date", 'total_mv'
+        "date", "open", "high", "low", "close",  "pre_close", "amount", "vol", 
+        "turnover_rate", "turnover_rate_f", "pe", 'total_mv',  "time"
     ]
-    def __init__(self):
+    def __init__(self, date, open, high, low, close, pre_close, amount, vol):
         # super(Candle, self).__init__()
         for attr in Candle.CommonAttr:
             setattr(self, attr, None) 
+        self.date = date
+        self.open = open
+        self.high = high
+        self.low = low
+        self.close = close
+        self.pre_close = pre_close
+        self.amount = amount
+        self.vol = vol
         self.macd = None
         return 
     def __str__(self):
@@ -75,6 +84,8 @@ class Kline():
     def __repr__(self):
         return self.__str__()
     def __str__(self):
+        if len(self) == 0:
+            return "[Kline %s] k线图为空" %(self.name)
         rsp = "[KLine %s-%s]\n    " %(self.name, self[0].date)
         if len(self) > 10:
             rsp += str(self.candles[:2]) + "..." + str(self.candles[-2:])
@@ -123,7 +134,8 @@ class Kline():
             "ma" : np.mean,
             "min" : np.min,
             "max" : np.max,
-            "std" : np.std
+            "std" : np.std,
+            "sum" : np.sum
         } 
         if reduce_fun in fun_map:
             reduce_fun = fun_map[reduce_fun]
@@ -194,8 +206,43 @@ class Kline():
         c.macd = MACD(ema12, ema26, dif, dea)
         return c.macd
 
-
+    def get_ma_k(self, k = 30):
+        ma_k = [] 
+        k_sum = self.reduce("close", k - 1, reduce_fun = "sum")
+        print(self.reduce("close", k))
+        for i in range(len(self)):
+            j = i + k -1  # k均线: i, i+1, ..., i + k -1
+            if j >= len(self):
+                break
+            k_sum += self[j].close
+            ma_k.append(k_sum / k)
+            k_sum -= self[i].close 
+        return ma_k
+    def get_ma_reverse_times(self, k = 30, days = 200):
+        """
+          最近days天, k均线图的走势反转次数
+          反转即: 均线图5个数字，涨涨跌跌 or 跌跌涨涨
+        """ 
+        ma_k = self.get_ma_k(k)
+        # 出现反转
+        reverse_idx = []
+        for i in range(1, len(ma_k) - 1, 1):
+            if (ma_k[i] - ma_k[i-1]) * (ma_k[i] - ma_k[i+1]) > 0 : 
+                reverse_idx.append(i)
+        # 出现反转
+        rsp = 0 
+        j = 0
+        while j < len(reverse_idx) - 1:
+            i1, i2 = reverse_idx[j], reverse_idx[j+1]
+            if i2 - i1 >= 5:
+                rsp += 1
+                print("反转日期: %s" %(self[i1].date))
+                j += 1
+            else:
+                j += 2
+        return rsp
 if __name__ == "__main__":
+    # 在tushare_api.py里测试Kline
     c = Candle 
     c.high = 123
     c.low = 145
