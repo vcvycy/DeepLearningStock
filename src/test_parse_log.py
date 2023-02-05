@@ -15,10 +15,9 @@ class LineItem:
         self.date = self.get_digit(" ? 概率", int)
         self.prob = self.get_digit("概率: ? ")
         try:
-            self.label = self.get_digit("label: ? ", int)
+            self.label = self.get_digit(" label: ? ")
         except:
             self.label = None
-        assert self.label is not None
         self.raw_label = self.get_digit("raw_label: ? ")
         self.certainly = self.get_digit("确定性: ? ")
         self.pos_rate = self.get_digit("正确率: ?")
@@ -34,12 +33,12 @@ class LineItem:
         # print("%s = %s" %(pat, value))
         return value
     def __str__(self):
-        return "%s %s %s rank %s\n" %(self.stock, self.date, self.raw_label, self.topk)
+        return "%s %s raw_label: %s label: %s rank %s\n" %(self.stock, self.date, self.raw_label, self.label,self.topk)
     def __repr__(self):
         return str(self)
-# line = 'INFO 2023-01-08 22:56:16,309 [Top_208371] 麦迪科技 20230103 概率: 0.3650 fid_label_avg: 0.4279 label: None raw_label: 999.000 确定性: 0.200 正确率: 0.41'
+# line = """INFO 2023-02-03 03:19:16,701 [Top_315957] 恒久科技 20221108 概率: -0.0416 fid_label_avg: 0.0005 label: -0.01899999938905239 raw_label: -0.019 确定性: 0.684 正确率: 0.56"""
 # item = LineItem(line)
-# print(item.stock)
+# print(item)
 # exit(0)
 class OneStat:
     def __init__(self):
@@ -105,7 +104,7 @@ class Stats:
                 stat = self.key2stat[key]
                 if key != "ALL_TIME":
                     assert stat.tot_ins  < 10000, "key = %s total ins = %s" %(key, stat.tot_ins)  # 每天的样本数应该 < 10000
-                    win = stat.topk_avg_label[buy_topk] - stat.topk_avg_label[stat.tot_ins] # 每天买topk股票 vs 每日大盘指标的收益
+                    win = stat.topk_avg_label.get(buy_topk, 0) - stat.topk_avg_label[stat.tot_ins] # 每天买topk股票 vs 每日大盘指标的收益
                     if win > 0:
                         win_money.append(win)
                         win_keys.append(key)
@@ -143,6 +142,8 @@ def step_read_log(round, end_when = "END"):
             print(line)
         try:
             item = LineItem(line)
+            if item.label is None or item.raw_label > 900:
+                continue
             # 过滤
             assert args.stock is None or args.stock in item.stock
             # assert item.topk < 1000

@@ -92,8 +92,9 @@ class Kline():
         else: 
             rsp += str(self.candles)
         return rsp
-    def draw(self, volume = True, mav=(7,30, 120), savefig=None, max_days= 90):
+    def draw(self, volume = True, mav=(30, 60, 120), savefig=None, max_days= 200, date2score = {}, title = None):
         """
+        date2score: 时间->模型分数的映射，用于看模型预估分
         画k线图，data格式为
         [
         {
@@ -103,6 +104,17 @@ class Kline():
         }
         ]
         """
+        def MACD(df, window_slow, window_fast, window_signal):
+            macd = pd.DataFrame()
+            macd['ema_slow'] = df['Close'].ewm(span=window_slow).mean()
+            macd['ema_fast'] = df['Close'].ewm(span=window_fast).mean()
+            macd['macd'] = macd['ema_slow'] - macd['ema_fast']
+            macd['signal'] = macd['macd'].ewm(span=window_signal).mean()
+            macd['diff'] = macd['macd'] - macd['signal']
+            macd['bar_positive'] = macd['diff'].map(lambda x: x if x > 0 else 0)
+            macd['bar_negative'] = macd['diff'].map(lambda x: x if x < 0 else 0)
+            return macd
+
         data = [
             {
                 "Date" : str2timestamp(c.date, "%Y%m%d"),
@@ -119,10 +131,22 @@ class Kline():
         index = [pd.to_datetime(timestamp2str(item["Date"])) for item in data] 
         df = pd.DataFrame(data, columns = ["Open", "High", "Low", "Close", "Volume"], index = index)
         df.index.name = 'Date'
+        if title is None:
+            title = self.name
+        # 中文乱码解决
+        # macd = MACD(df, 12, 26, 9)
+        macd_plot = [
+            # mpf.make_addplot((buy), color='#606060', secondary_y=False),
+            # mpf.make_addplot((macd['macd']), color='#606060', panel=2, ylabel='MACD', secondary_y=False),
+            # mpf.make_addplot((macd['signal']), color='#1f77b4', panel=2, secondary_y=False),
+        ]
+        if len(date2score) > 0:
+            model_score = [date2score.get(item["Date"], 0) for item in data]
+            macd_plot.append(mpf.make_addplot((model_score), color='#ff0000', type='bar', panel=2, ylabel='AI Result', secondary_y=False))
         if savefig is not None:
-            mpf.plot(df, type = 'candle', volume = volume, mav=mav, figsize=(20, 10), title=self.name, savefig=savefig)
+            mpf.plot(df, type = 'candle', volume = volume, mav=mav, figsize=(20, 10), title=title, savefig=savefig, addplot=macd_plot)
         else:
-            mpf.plot(df, type = 'candle', volume = volume, mav=mav, figsize=(20, 10), title=self.name)
+            mpf.plot(df, type = 'candle', volume = volume, mav=mav, figsize=(20, 10), title=title, addplot=macd_plot)
         return 
     
     def reduce(self, attr,  num, reduce_fun = "ma", offset = 0):

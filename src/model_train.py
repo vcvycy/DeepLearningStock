@@ -65,6 +65,9 @@ class Model():
         #     pred = logits
         #     loss = (label - pred) * (label - pred)
         #     print("MSE: %s" %(loss))
+        elif loss_type == "mse":
+            pred = logits
+            loss = (pred - label) * (pred -label)
         else:
             raise Exception("unknown loss_type: %s" %(loss_type))
         self.get_certrain_prob()
@@ -75,9 +78,10 @@ class Model():
     def _build_dense_nn(self):
         # 建NN
         pass 
-    def _get_model_feed_dict(self, mini_batch):
+    def _get_model_feed_dict(self, mini_batch, training = True):
         """
           mini-batch为TrainItem数组, 转化为feed dict
+          默认为training，即包含label
         """
         pass
     
@@ -186,7 +190,7 @@ class LRModel(Model):
         
         # 过Dense nn, 得到pred和loss
         if self.conf.get("bias_attention"):
-            bias_attention = tf.nn.sigmoid(self.dense_tower(self.get_slot_concat_embedding("attn_raw_embed"), [8, slot_num], name="bias_attn"))
+            bias_attention = tf.nn.sigmoid(self.dense_tower(bias_input, [16, slot_num], name="bias_attn"))
             self.emit("bias_attention", bias_attention)
             bias_input_attn = bias_input * bias_attention
             bias_sum = tf.reduce_mean(bias_input_attn, axis = 1)
@@ -213,7 +217,7 @@ class LRModel(Model):
 
         return logits
 
-    def _get_model_feed_dict(self, mini_batch):
+    def _get_model_feed_dict(self, mini_batch, training = True):
         """
           将fid index映射为 0/1值, example:
             fid_index = [2, 4,5]
@@ -222,22 +226,26 @@ class LRModel(Model):
         # 每个训练样本, 每个slot对应的fid index
         # slot_bias_fid_index
         fid_index = []
-        # 每个训练样本的label
-        label = []
         slot2index = self.train_data.slot2idx
         fid2index = self.train_data.fid2index
         # last_30d_close = []
         for train_item in mini_batch:
             fid_index.append(train_item.get_slot_indexs(slot2index, fid2index))
             #label
-            label.append(train_item.label)
             # last_30d_close.append(train_item.name2dense["last_30d_close"])
         feed_dict = {
             self.learning_rate : self.conf.get("learning_rate"),
-            self.slot_bias_fid_index:  fid_index,
-            self.label : label,
+            self.slot_bias_fid_index:  fid_index
             # self.last_30d_close :last_30d_close
         }
+        if training: # label 只有训练的时候才要传
+            raw_label = [] 
+            for train_item in mini_batch:
+                date2thre = get_rm().date2thre
+                # print("rawlabel %s thre: %s" %(train_item.raw_label, date2thre[train_item.date]))
+                # raw_label.append(train_item.raw_label - date2thre[train_item.date])
+                raw_label.append(train_item.raw_label)
+            feed_dict[self.raw_label] = raw_label
         return feed_dict
     
     def _train(self):
@@ -250,11 +258,18 @@ class LRModel(Model):
         logits = self._build_dense_nn()
 
         # label和预估分
-        self.label = tf.placeholder(tf.float32, [None], name = "label")
+        self.raw_label = tf.placeholder(tf.float32, [None], name = "raw_label") 
+        if self.conf.get("label").get("binarized", None) is not None:
+            threshold = self.conf.get("label").get("binarized", None)
+            logging.info("label 二值化: %s" %(threshold))
+            self.label = tf.where(self.raw_label > threshold, tf.ones_like(self.raw_label), tf.zeros_like(self.raw_label), name = "label")
+        else:
+            self.label = self.raw_label
         self.pred, loss = self.get_pred_and_loss(logits, self.label)
 
         self.emit("pred", self.pred)
         self.emit("label", self.label)
+        self.emit("raw_label", self.raw_label)
         self.losses.append(loss)
         self.loss = tf.add_n(self.losses)
 
@@ -282,11 +297,11 @@ class LRModel(Model):
                 feed_dict = self._get_model_feed_dict(mini_batch)
 
                 # 开始训练
-                _, pred_val, loss_val, summary_val=sess.run([self.optimizer, self.pred, self.loss, self.all_summary],
+                _, pred_val, loss_val, label_val, summary_val=sess.run([self.optimizer, self.pred, self.loss, self.label, self.all_summary],
                         feed_dict = feed_dict)
                 self.writer.add_summary(summary_val, i)
                 if i % 100 == 0:
-                    label_avg = np.mean(feed_dict[self.label])
+                    label_avg = np.mean(label_val)
                     pred_avg = np.mean(pred_val)
                     logging.info("[train-epoch:%5s] loss: %.2f, label: %.2f pred: %.2f batch_size: %s" %(i+1, 
                                         loss_val, label_avg, pred_avg, len(mini_batch)))
@@ -334,7 +349,7 @@ class LRModel(Model):
             batch_size = 500
             batch = items[:batch_size]
             items = items[batch_size:]
-            feed_dict = self._get_model_feed_dict(batch)
+            feed_dict = self._get_model_feed_dict(batch, training = False)
             pred_val, certainly_val = self.sess.run([self.pred, self.certainly_raw], feed_dict = feed_dict)
             for i in range(len(batch)):
                 results.append({

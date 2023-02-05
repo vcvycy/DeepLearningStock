@@ -97,34 +97,15 @@ class TrainData():
     def __get_label(self, ins):
         # 获取ins的label值
         # 错误则返回None
-        date2thre = get_rm().date2thre
-        def binarize(ins, args):
-            #  label二值化
-            label = 0
-            if ins.date not in date2thre:
-                return None
-            threshold = max(-0.05, date2thre[ins.date]) #args.get("threshold")
-            key = args.get("key") 
-            assert key in ins.label, "key %s not in label: %s" %(key, ins)
-            label = 0  if ins.label[key] < threshold else 1 #and ins.label["next_7d_close_price"] < threshold else 1
-            # if ins.label["next_3d_min_price"] < -0.1: # 后续3天，最低点跌10个点为负例, 负例多0.5%
-            #    label = 0
-            # label = 0  if ins.label[key] < threshold  else 1
-            return label 
-
         label_conf = self.conf.get("label")
         args = label_conf.get("args")
         key = args.get("key") 
-        if key in ins.label: 
-            label = None
-            if label_conf.get("method") == "binarize":
-                label = binarize(ins, args) 
-            else:
-                key = args.get("key") 
-                label = ins.label[key]
-        else:
+        if key not in ins.label:
             return None, None
-        return label, ins.label.get(args.get("key"))
+        raw_label = ins.label[key]#, ins.label["next_7d_close_price"]) 
+        if ins.label["next_3d_min_price"] < -0.1:
+           raw_label = -0.1
+        return raw_label, raw_label
 
     def __init_train_items(self):
         """
@@ -141,7 +122,7 @@ class TrainData():
                     name2dense[fc.name] = fc.dense
             label, raw_label = self.__get_label(ins)
             if label is not None and ins.date < get_rm().validate_date:
-                train_item = TrainItem(fids, label, raw_label, name2dense)
+                train_item = TrainItem(fids, label, raw_label, name2dense, ts_code = ins.ts_code, date = ins.date)
                 self.train_items.append(train_item)
                 self.train_item_weights.append(self.__init_train_item_sample_weight(train_item))  # 训练样本权重
             else: 

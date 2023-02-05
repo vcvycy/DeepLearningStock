@@ -40,6 +40,7 @@ def read_file_with_size(f, PBClass = None):
     if len(data_size_bin) < 8:
         return 0, None
     data_size = struct.unpack('Q', data_size_bin)[0]
+    assert data_size < 2**20
     data = f.read(data_size)
     if PBClass is not None:
         obj = PBClass()

@@ -33,6 +33,7 @@ class TushareApi:
     __ts_code2name = {}
     __ts_code2type = {}
     ts_code2basic = {}
+    all_stock = []
     @staticmethod
     def init_client(api_key):
         global client
@@ -48,7 +49,9 @@ class TushareApi:
     def get_all_stocks():
         global client
         global __ts_code2name
-        data = []
+        if len(TushareApi.all_stock) > 0:
+            return TushareApi.all_stock
+        data = TushareApi.all_stock
         # 基金etf/lof
         df = client.fund_basic(market='E', status='L') 
         for idx,value in df.iterrows():
@@ -213,7 +216,8 @@ if __name__ == "__main__":
     # print(kline)
     # print(kline.get_ma_reverse_times(k = 30))
     kline = TushareApi.get_kline_by_ts_code_weekly("000001.SZ", start_date= "20100601", end_date="")
-    print(kline[0])
+    kline.draw()
+    # print(kline[0])
     # print(kline.reduce("close", 30, "ma"))
     # print(kline[0])
     # print(kline[1])

@@ -27,7 +27,7 @@ class FeatureWeeklyStep(Step):
         return feature
     def get_recent_rise_feature(self, context):
         """
-          最近N天/周📈📉特征
+          最近N周📈📉特征
         """
         kline = context.get("source.kline") 
         feature = {
