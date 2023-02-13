@@ -1,12 +1,13 @@
 log_file : "../log/model_train.log"
 
-# max_ins: 100000   # debug，最多读多少数据
+# max_ins: 200000   # debug，最多读多少数据
 train_files:  # 只读第一个
   # 全量股票
+  # - ../training_data/data.weekly.20230209_2248
   # - ../training_data/data.weekly.20230131_1918
-  - ../training_data/data.daily.20230206_1746
-  - ../training_data/data.daily.20230203_2003
-  - ../training_data/data.daily.20230202_2207
+  - ../training_data/data.daily.20230211_2131
+  - ../training_data/data.daily.20230209_1738
+
 #预处理instance: 处理label, 过滤fid等
 train_data:
   train_ins_percent: 0.8          # 训练集占比(优先于下面这个参数)
@@ -32,7 +33,7 @@ train_data:
       - 242
       - 243
       - 244
-
+# label改成分天算thre: (1) min_3d_price去掉 (2) raw_label -date2thre (3) binarize = 0.0
 
 model: 
   label:

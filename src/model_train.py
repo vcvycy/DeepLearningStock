@@ -243,8 +243,9 @@ class LRModel(Model):
             for train_item in mini_batch:
                 date2thre = get_rm().date2thre
                 # print("rawlabel %s thre: %s" %(train_item.raw_label, date2thre[train_item.date]))
-                # raw_label.append(train_item.raw_label - date2thre[train_item.date])
-                raw_label.append(train_item.raw_label)
+                thre = 0# max(-0.03, date2thre[train_item.date])
+                raw_label.append(train_item.raw_label - thre)
+                # raw_label.append(train_item.raw_label)
             feed_dict[self.raw_label] = raw_label
         return feed_dict
     

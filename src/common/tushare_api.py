@@ -10,6 +10,7 @@ import time
 import os
 def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切断)
     def wrapper(*args, **kwargs):
+        # return fun(*args, **kwargs)
         retry = 6
         for i in range(retry):
             if i > 0:
@@ -125,7 +126,10 @@ class TushareApi:
     @TushareDecorator
     def get_kline_by_ts_code(ts_code, start_date = "", end_date = ""):
         def update_kline(kline, kline_df, basic_df = None):
-            for i in range(kline_df.shape[0]):
+            num = kline_df.shape[0]
+            if basic_df is not None:
+                num = min(num, basic_df.shape[0])
+            for i in range(num):
                 c = Candle(
                     date = kline_df.at[i, "trade_date"],
                     open = kline_df.at[i, "open"],
@@ -209,7 +213,9 @@ if __name__ == "__main__":
     # client = TushareApi.init_client("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f") 
     # client.fund_basic(market='E') 
     
-    # TushareApi.get_basic_by_ts_code("000001.SZ", start_date= "20200101")
+    kline = TushareApi.get_kline_by_ts_code("834765.BJ", start_date= "20200601")
+    print(kline)
+    exit(0)
     # TushareApi.get_basic_by_ts_code("513050.SH", start_date= "20200101")
     # kline = TushareApi.get_kline_by_ts_code("300711.SZ", start_date= "20200601", end_date="")
     # print(len(kline))
