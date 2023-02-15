@@ -25,7 +25,7 @@ class LabelStep(Step):
             # 最高价格
             max_price = max([kline.high for kline in kline_label[-d:]]) 
             labels["next_%sd_max_price" %(d)] = float_trun(max_price/open_price - 1.0)  
-            # 最高价格
+            # 最低价格
             min_price = min([kline.low for kline in kline_label[-d:]]) 
             labels["next_%sd_min_price" %(d)] = float_trun(min_price/open_price - 1.0)
             # 收盘价格
