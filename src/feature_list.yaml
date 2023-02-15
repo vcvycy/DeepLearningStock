@@ -535,6 +535,41 @@ feature_columns:
   #     min: -50
   #     max: 50
   
+  # - name : trend_reversal_10d         # 趋势反转
+  #   depends : trend_reversal.ma_10_10d
+  #   slot : 230
+  #   method : LinearDiscrete  
+  #   args:   
+  #     step: 1
+  #     min: 0
+  #     max: 2
+
+  # - name : trend_reversal_30d         # 趋势反转
+  #   depends : trend_reversal.ma_10_30d
+  #   slot : 231
+  #   method : LinearDiscrete  
+  #   args:   
+  #     step: 2
+  #     min: 0
+  #     max: 5
+
+  # - name : trend_reversal_90d         # 趋势反转
+  #   depends : trend_reversal.ma_10_90d
+  #   slot : 232
+  #   method : LinearDiscrete  
+  #   args:   
+  #     step: 3
+  #     min: 0
+  #     max: 15
+  
+  # - name : trend_reversal_180d         # 趋势反转
+  #   depends : trend_reversal.ma_10_180d
+  #   slot : 234
+  #   method : LinearDiscrete  
+  #   args:   
+  #     step: 5
+  #     min: 0
+  #     max: 30
   # # 240 ~260 上证指数相关
 
   - name : sh_index_surpass_1d         # 对比上证指数

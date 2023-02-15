@@ -230,10 +230,10 @@ class Kline():
         c.macd = MACD(ema12, ema26, dif, dea)
         return c.macd
 
-    def get_ma_k(self, k = 30):
+    def get_ma_line(self, k = 30):
         ma_k = [] 
         k_sum = self.reduce("close", k - 1, reduce_fun = "sum")
-        print(self.reduce("close", k))
+        # print(self.reduce("close", k))
         for i in range(len(self)):
             j = i + k -1  # k均线: i, i+1, ..., i + k -1
             if j >= len(self):
@@ -244,23 +244,26 @@ class Kline():
         return ma_k
     def get_ma_reverse_times(self, k = 30, days = 200):
         """
-          最近days天, k均线图的走势反转次数
-          反转即: 均线图5个数字，涨涨跌跌 or 跌跌涨涨
+            k: 表示k日均线图
+            最近days天, k均线图的走势反转次数
+            反转即: 均线图5个数字，涨涨跌跌 or 跌跌涨涨
         """ 
-        ma_k = self.get_ma_k(k)
+        assert self[0].date > self[1].date, "需要保证candle从近到远"
+        ma_k = self.get_ma_line(k)
         # 出现反转
         reverse_idx = []
+        is_rise = []
         for i in range(1, len(ma_k) - 1, 1):
             if (ma_k[i] - ma_k[i-1]) * (ma_k[i] - ma_k[i+1]) > 0 : 
                 reverse_idx.append(i)
+                is_rise.append(True if ma_k[i + 1] - ma_k[i] > 0 else False)
         # 出现反转
-        rsp = 0 
+        rsp = [] 
         j = 0
         while j < len(reverse_idx) - 1:
             i1, i2 = reverse_idx[j], reverse_idx[j+1]
             if i2 - i1 >= 5:
-                rsp += 1
-                print("反转日期: %s" %(self[i1].date))
+                rsp.append((i1, is_rise[j]))
                 j += 1
             else:
                 j += 2

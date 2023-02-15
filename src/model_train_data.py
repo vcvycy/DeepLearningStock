@@ -102,11 +102,11 @@ class TrainData():
         key = args.get("key") 
         if key not in ins.label:
             return None, None
-        raw_label = ins.label[key]#, ins.label["next_7d_close_price"]) 
+        raw_label = max(ins.label[key],ins.label["next_7d_close_price"])
         # if ins.label["next_7d_mean_price"] < -0.03:
         #    raw_label = ins.label["next_7d_close_price"]
-        if ins.label["next_3d_min_price"] < -0.1:
-           raw_label = -0.1
+        # if ins.label["next_3d_min_price"] < -0.1:
+        #    raw_label = -0.1
         return raw_label, raw_label
 
     def __init_train_items(self):

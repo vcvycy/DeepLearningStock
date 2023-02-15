@@ -222,6 +222,26 @@ class FeatureStep(Step):
         } 
         return feature
 
+    def get_ma_reverse(self, context):
+        """
+          统计 k 日均线图，最近n天出现几次趋势反转
+        """
+        kline = context.get("source.kline") 
+        ma_k = 10
+        candle_idxs = kline.get_ma_reverse_times(k = ma_k) 
+        # for c, is_rise in candle_idxs:
+        #     print("%s %s" %(kline[c].date, "up" if is_rise else "down"))
+        feature = {}
+        for days in [10, 30, 90, 180]:
+            cnt = 0
+            for idx, is_rise in candle_idxs:
+                if idx < days:
+                    cnt += 1
+                # else:
+                #     break
+            feature["ma_%d_%dd" %(ma_k, days)] = cnt  
+        return feature
+
     def get_sh_index_feature(self, context):
         """
           上证指数
@@ -257,7 +277,9 @@ class FeatureStep(Step):
             # dense 特征
             "dense" : self.get_dense_last_n_day(context),
             # 上证指数
-            "sh_index" : self.get_sh_index_feature(context)
+            "sh_index" : self.get_sh_index_feature(context),
+            # 均线反转次数
+            # "trend_reversal" : self.get_ma_reverse(context)
         } 
         context.set(self.out_key, feature)
         return 
