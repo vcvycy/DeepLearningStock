@@ -161,11 +161,10 @@ class Stats:
             if key == "ALL_TIME" or show_date:
                 print(("%s-%s" %(self.prefix, key)).center(100, "=")) 
                 print(stat.output)
-        for buy_topk in [1, 2,4, 8]:
+        for buy_topk in [2,4]:
             win_money = []
-            win_keys = []
             loss_money = []
-            loss_keys = []
+            win_date_pair = []
             for key in keys: 
                 stat = self.key2stat[key]
                 if key != "ALL_TIME":
@@ -173,15 +172,18 @@ class Stats:
                     win = stat.topk_avg_label.get(buy_topk, 0) - stat.topk_avg_label[stat.tot_ins] # 每天买topk股票 vs 每日大盘指标的收益
                     if win > 0:
                         win_money.append(win)
-                        win_keys.append(key)
                     else:
                         loss_money.append(win)
-                        loss_keys.append(key)
+                    win_date_pair.append((key, win))
             print("买top %s 【日平均收益: %.2f%%】,  能跑赢大盘%s天, 平均盈利: %.2f%%, 跑输大盘%s天, 平均跑输: %.2f%%" %(
                 buy_topk, np.mean(win_money + loss_money) * 100,
                 len(win_money), np.mean(win_money) *100,
                 len(loss_money), np.mean(loss_money) *100
                 ))
-            print("    跑赢大盘日期: %s" %(win_keys))
-            print("    跑输大盘日期: %s" %(loss_keys))
+            win_date_pair.sort(key = lambda x : x[1])
+            # win_date_pair = win_date_pair[:5] + win_date_pair[-5:]
+            for date, win in win_date_pair:
+                print("    日期: %s 收益: %.2f%%" %(date, win*100))
+            # print("    跑赢大盘日期: %s" %(win_keys))
+            # print("    跑输大盘日期: %s" %(loss_keys))
         return 

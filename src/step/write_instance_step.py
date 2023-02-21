@@ -16,6 +16,7 @@ class WriteInstanceStep(Step):
         self.f = open(self.save_file, "wb") 
         self.cache_size = conf.get("cache_size", 30)
         self.cache = Queue()
+        self.last_write_time = time.time()  # 最后一次写文件的时间
         # 
         self.write_mutex = threading.Lock()
         self.write_raw_feature = conf.get("write_raw_feature", False)
@@ -66,6 +67,7 @@ class WriteInstanceStep(Step):
     def write_instance(self):
         self.write_mutex.acquire()
         # 把二进制数据+字节数写到文件中: 写到队列为空或者写cache个
+        self.last_write_time = time.time()
         write_cnt = self.cache_size
         print("wriet_instance: size: %s" %(self.cache.qsize()))
         while not self.cache.empty() and write_cnt > 0:
@@ -86,6 +88,6 @@ class WriteInstanceStep(Step):
         ins = self.pack_instance(context)
         self.add_instance(ins)
         # cache数足够了，则写文件
-        if self.cache.qsize() >= self.cache_size:
+        if self.cache.qsize() >= self.cache_size or (self.cache.qsize() > 0 and self.last_write_time < time.time() -10):
             self.write_instance()
         return 

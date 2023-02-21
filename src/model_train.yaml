@@ -5,7 +5,7 @@ train_files:  # 只读第一个
   # 全量股票
   # - ../training_data/data.weekly.20230209_2248
   # - ../training_data/data.weekly.20230131_1918
-  - ../training_data/data.daily.20230215_1619
+  - ../training_data/data.daily.20230221_0048
   # - ../training_data/data.daily.20230214_2145
   # - ../training_data/data.daily.20230213_2025
   # - ../training_data/data.daily.20230211_2131
@@ -36,11 +36,11 @@ train_data:
       # - 232
       # - 233
       # - 234
-      - 240
-      - 241
-      - 242
-      - 243
-      - 244
+      # - 240
+      # - 241
+      # - 242
+      # - 243
+      # - 244
 # label改成分天算thre: (1) min_3d_price去掉 (2) raw_label -date2thre (3) binarize = 0.0
 
 model: 

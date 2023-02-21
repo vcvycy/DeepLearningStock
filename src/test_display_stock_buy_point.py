@@ -28,7 +28,7 @@ def main():
             for item in all_items:
                 if item.date == lastest_date:
                     stock_names.append(item.stock)
-            stock_names = stock_names[:1]
+            stock_names = stock_names[:5]
             print("没有指定股票，自动取%s top 5的股票： %s" %(lastest_date, stock_names))
         else:
             stock_names = args.stocks.split(",") 
