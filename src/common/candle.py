@@ -7,7 +7,7 @@ import mplfinance as mpf
 from common.utils import *
 import numpy as np
 import logging
-
+sys.setrecursionlimit(200000) # 递归层数(macd递归计算)
 class MACD():
     def __init__(self, ema12 = 0, ema26 = 0, dif = 0, dea = 0):
         self.ema12 = ema12

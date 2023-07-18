@@ -67,9 +67,12 @@ def main():
     while True:
         round += 1
         print('-' * 200)
-        stats, all_items = step_read_log(round, end_when = "END")
-        if len(all_items) < 10000:
-            continue
+        try:
+            stats, all_items = step_read_log(round, end_when = "END")
+        except:
+            break
+        # if len(all_items) < 10000:
+        #     continue
         # input("all_item: %s" %(len(all_items)))
         step_analysis(round, stats, all_items) 
 

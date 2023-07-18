@@ -95,7 +95,6 @@ class FeatureStep(Step):
             "low_3d" : kline.reduce("low", 3, "min"),
             "high_7d" : kline.reduce("high", 7, "max"),
             "low_7d" : kline.reduce("low", 7, "min"),
-            "high_180d" : kline.reduce("high", 180, "max"),
 
             "high_7d_14d" : kline.reduce("high", 14, "max", offset = 7),
             "low_7d_14d" : kline.reduce("low", 14, "min", offset = 7),
@@ -256,6 +255,7 @@ class FeatureStep(Step):
             feature["rise_%dd" %(d)] = RM.sh_index.get_rise(d, sh_index_offset) 
             # 最近d天是否跑赢上证指数
             feature["surpass_%dd" %(d)] = kline.get_rise(d) - RM.sh_index.get_rise(d, sh_index_offset)
+        feature["close"] = RM.sh_index[sh_index_offset].close
         return feature 
     
     def _execute(self, context):
@@ -263,6 +263,7 @@ class FeatureStep(Step):
           原始特征抽取
         """
         feature = {
+            # "ts_code_type" : 
             "time" : self.get_time_feature(context),
             "recent_rise" : self.get_recent_rise_feature(context),
             "vol" : self.get_vol_related_feature(context),

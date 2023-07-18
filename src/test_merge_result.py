@@ -21,11 +21,12 @@ def main():
     key2items = {}
     all_num = 0
     # 合并排序位置topk
+    f = None if args.path == "" else open(args.path, "r")
     while True:
         try:
             round += 1
             print('-' * 200)
-            all_items = read_all_item(end_when = "END")
+            all_items = read_all_item(end_when = "END", f = f)
             if len(all_items) < 10000:
                 continue 
             all_num += len(all_items)
@@ -62,5 +63,6 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--stocks', type=str, default="") 
+    parser.add_argument('-p', '--path', type=str, default="") 
     args = parser.parse_args()
     main()

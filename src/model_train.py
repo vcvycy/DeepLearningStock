@@ -85,7 +85,7 @@ class Model():
         """
         pass
     
-    def _get_variable(self, name, shape,initializer = tf.keras.initializers.he_normal()):\
+    def _get_variable(self, name, shape,initializer = tf.keras.initializers.he_normal()):
         return tf.get_variable(name,
                             shape=shape,
                             initializer=initializer)
@@ -118,6 +118,17 @@ class Model():
         raise Exception("need override")
     def train(self):
         self._train()
+
+    def save(self, save_path = "../model/model.ckpt"):
+        saver = tf.train.Saver(max_to_keep=5)
+        saver.save(self.sess, save_path)
+        logging.info("model save to %s" %(save_path))
+        
+    def load(self, path="../model/model.ckpt"):
+        saver=tf.train.Saver(max_to_keep=5)
+        saver.restore(self.sess, path)
+        logging.info("Restore from %s success" %(path))
+        return 
     
 class LRModel(Model): 
     """
@@ -127,9 +138,9 @@ class LRModel(Model):
         super(LRModel, self).__init__()
         return 
     
-    def get_slot_concat_embedding(self, name, gather = True):
+    def get_slot_concat_embedding(self, name, gather = True, size = 1):
         weight_initer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
-        all_fid_embed =  tf.get_variable(name=name, dtype=tf.float32, shape=[self.fid_num], initializer=weight_initer)
+        all_fid_embed =  tf.get_variable(name=name, dtype=tf.float32, shape=[self.fid_num, size], initializer=weight_initer)
         self.emit("all_fid_embed/%s" %(name), all_fid_embed)
         if gather:
             slot_embed = tf.gather(all_fid_embed, self.slot_bias_fid_index) 
@@ -141,8 +152,8 @@ class LRModel(Model):
     def _init_sparse_embedding(self):
         bias_num = self.fid_num
         # weight_initer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
-        self.sparse_bias = self.get_slot_concat_embedding("bias", gather = False) # tf.get_variable(name="bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
-        self.certain_bias =  self.get_slot_concat_embedding("certain_bias") # tf.get_variable(name="certain_bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
+        self.sparse_bias = self.get_slot_concat_embedding("bias", gather = False, size = 4) # tf.get_variable(name="bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
+        self.certain_bias =  tf.reduce_sum(self.get_slot_concat_embedding("certain_bias"), axis= 1) # tf.get_variable(name="certain_bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
         logging.info("bias num: %s %s" %(bias_num, self.sparse_bias)) 
         return 
 
@@ -151,7 +162,7 @@ class LRModel(Model):
         input = self.certain_bias
         logits = tf.reduce_sum(input, axis = 1)
         self.emit("certainly/logits", logits)
-        certainly_raw= tf.sigmoid(logits) + 0.2
+        certainly_raw= tf.sigmoid(logits) + 0.01
         self.emit("certainly/raw_val", certainly_raw)
         certainly = certainly_raw/ tf.reduce_mean(certainly_raw)
         print("certainly: %s" %(certainly))
@@ -175,7 +186,7 @@ class LRModel(Model):
         else:
             self.global_bias = tf.constant(0, dtype=tf.float32)
         # ins_fid_num = tf.reduce_sum(bias_fid_gate, axis = 1)                          # 每个instance有多少fid
-        bias_input = tf.gather(self.sparse_bias, self.slot_bias_fid_index)                                # 乘以开关
+        bias_input = tf.gather(self.sparse_bias, self.slot_bias_fid_index, axis = 0)                                # 乘以开关
         logging.info("[BuildDenseNN]dense model: %s fid_index: %s bias_input: %s" %(self.sparse_bias, 
                                 self.slot_bias_fid_index, bias_input))
         
@@ -189,25 +200,35 @@ class LRModel(Model):
             logits += last_30d_nn_out
         
         # 过Dense nn, 得到pred和loss
-        if self.conf.get("bias_attention"):
-            bias_attention = tf.nn.sigmoid(self.dense_tower(bias_input, [16, slot_num], name="bias_attn"))
-            self.emit("bias_attention", bias_attention)
-            bias_input_attn = bias_input * bias_attention
-            bias_sum = tf.reduce_mean(bias_input_attn, axis = 1)
-            # 每个slot监控
-            attn_transpose = tf.transpose(bias_attention)
-            slot2index = self.train_data.slot2idx
-            index2slot = {slot2index[slot] : slot for slot in slot2index}
-            for idx in index2slot:
-                slot = index2slot[idx]
-                self.emit("attention/slot_%s_idx_%s" %(slot, idx), attn_transpose[idx])
-        else:
-            bias_sum = tf.reduce_mean(bias_input, axis = 1)
-        logits += bias_sum + self.global_bias
+        # if self.conf.get("bias_attention"):
+        #     bias_attention = tf.nn.sigmoid(self.dense_tower(bias_input, [16, slot_num], name="bias_attn"))
+        #     self.emit("bias_attention", bias_attention)
+        #     bias_input_attn = bias_input * bias_attention
+        #     bias_sum = tf.reduce_mean(bias_input_attn, axis = 1)
+        #     # 每个slot监控
+        #     attn_transpose = tf.transpose(bias_attention)
+        #     slot2index = self.train_data.slot2idx
+        #     index2slot = {slot2index[slot] : slot for slot in slot2index}
+        #     for idx in index2slot:
+        #         slot = index2slot[idx]
+        #         self.emit("attention/slot_%s_idx_%s" %(slot, idx), attn_transpose[idx])
+        # else:
+        l2_loss = tf.reduce_sum(bias_input**2) * 1e-5
+        self.emit("l2_loss", l2_loss)
+        self.losses.append(l2_loss)
+        bias_sum = tf.reduce_mean(bias_input, axis = [1,2])
+        logits += bias_sum 
         self.emit("logit/bias_sum", bias_sum)
         if isinstance(self.conf.get("bias_nn_dims"), list):
             dims = self.conf.get("bias_nn_dims")
-            nn_out = tf.reduce_sum(self.dense_tower(bias_input, dims, name="bias_nn"), axis = 1)
+            bias_input_flat = tf.layers.flatten(bias_input)
+            ### dropout ###
+            bias_input_flat_dropout = bias_input_flat
+            self.dropout_prob = tf.placeholder(tf.float32, shape=(), name = "dropout_prob")
+            # self.emit("dropout_prob", self.dropout_prob)
+            # bias_input_flat_dropout =  tf.nn.dropout(bias_input_flat, self.dropout_prob)
+
+            nn_out = tf.reduce_sum(self.dense_tower(bias_input_flat_dropout, dims, name="bias_nn"), axis = 1)
             self.emit("logit/bias_nn_out", nn_out)
             logits += nn_out
             # self.losses.append(tf.reduce_sum(nn_out) * 1e-5)
@@ -217,7 +238,7 @@ class LRModel(Model):
 
         return logits
 
-    def _get_model_feed_dict(self, mini_batch, training = True):
+    def _get_model_feed_dict(self, mini_batch, training = True, dropout_prob = 0.9):
         """
           将fid index映射为 0/1值, example:
             fid_index = [2, 4,5]
@@ -234,6 +255,7 @@ class LRModel(Model):
             #label
             # last_30d_close.append(train_item.name2dense["last_30d_close"])
         feed_dict = {
+            self.dropout_prob : dropout_prob,
             self.learning_rate : self.conf.get("learning_rate"),
             self.slot_bias_fid_index:  fid_index
             # self.last_30d_close :last_30d_close
@@ -289,29 +311,38 @@ class LRModel(Model):
         sess.run(tf.global_variables_initializer())
         self.all_summary = tf.summary.merge_all()
         self.global_step = 0
-        for i in range(epoch):
-            try:
-                self.global_step = i
-                # 获取mini batch, 并转化为input
-                mini_batch = train_data.get_mini_batch(batch_size)
-                # 获取mini batch每个item的fid开关
-                feed_dict = self._get_model_feed_dict(mini_batch)
+        if self.conf.get("load_model"):
+            self.load()
+            logging.info("载入模型，不重新训练")
+        else:
+            for i in range(epoch):
+                try:
+                    self.global_step = i
+                    # 获取mini batch, 并转化为input
+                    mini_batch = train_data.get_mini_batch(batch_size)
+                    # 获取mini batch每个item的fid开关
+                    feed_dict = self._get_model_feed_dict(mini_batch)
 
-                # 开始训练
-                _, pred_val, loss_val, label_val, summary_val=sess.run([self.optimizer, self.pred, self.loss, self.label, self.all_summary],
-                        feed_dict = feed_dict)
-                self.writer.add_summary(summary_val, i)
-                if i % 100 == 0:
-                    label_avg = np.mean(label_val)
-                    pred_avg = np.mean(pred_val)
-                    logging.info("[train-epoch:%5s] loss: %.2f, label: %.2f pred: %.2f batch_size: %s" %(i+1, 
-                                        loss_val, label_avg, pred_avg, len(mini_batch)))
-            except KeyboardInterrupt:
-                logging.info("手动退出训练过程")
-                break
+                    # 开始训练
+                    _, pred_val, loss_val, label_val, summary_val=sess.run([self.optimizer, self.pred, self.loss, self.label, self.all_summary],
+                            feed_dict = feed_dict)
+                    self.writer.add_summary(summary_val, i)
+                    if i % 100 == 0:
+                        label_avg = np.mean(label_val)
+                        pred_avg = np.mean(pred_val)
+                        logging.info("[train-epoch:%5s] loss: %.2f, label: %.2f pred: %.2f batch_size: %s" %(i+1, 
+                                            loss_val, label_avg, pred_avg, len(mini_batch)))
+                except KeyboardInterrupt:
+                    logging.info("手动退出训练过程")
+                    break
+            logging.info("模型训练结束，保存模型")
+            self.save()
+        
+        logging.info("fid2index: %s" %(train_data.fid2index))
         # 结果: 输出Fid对应的值
-        bias_value, global_bias_val, bias_value_with_gbias = sess.run([self.sparse_bias, 
-                           self.global_bias, tf.sigmoid(self.sparse_bias + self.global_bias)])
+        self.fid_bias_sum = tf.reduce_sum(self.sparse_bias, axis = 1)
+        bias_value, global_bias_val, bias_value_with_gbias = sess.run([self.fid_bias_sum, 
+                           self.global_bias, tf.sigmoid(self.fid_bias_sum + self.global_bias)])
         logging.info("bias_value(原始值): %s ; global_bias: %s" %(bias_value, global_bias_val))
         # 每个fid的bias值
         self.fid2bias_val = {}
@@ -350,7 +381,7 @@ class LRModel(Model):
             batch_size = 500
             batch = items[:batch_size]
             items = items[batch_size:]
-            feed_dict = self._get_model_feed_dict(batch, training = False)
+            feed_dict = self._get_model_feed_dict(batch, training = False, dropout_prob = 1.0)
             pred_val, certainly_val = self.sess.run([self.pred, self.certainly_raw], feed_dict = feed_dict)
             for i in range(len(batch)):
                 results.append({

@@ -75,11 +75,18 @@ class TushareSource(MultiThreadSource):
     def start_multi_thread(self):
         for i in range(self.stock_size):
             name = self.all_stocks[i]["name"]
+            ts_code = self.all_stocks[i]["ts_code"]
             if self.whitelist is not None:
                 if self.whitelist not in name and self.whitelist not in self.all_stocks[i]["ts_code"]:
                     continue                 
             # 是否过滤ST
             if self.conf.get("skip_st") == True and 'ST' in name:
+                continue
+            if "退" in name:
+                # print("filter: %s" %(name))
+                continue
+            if ts_code[0] not in ["0", "6"]:
+                # print("ts_code: %s" %(ts_code))
                 continue
             # 是否过滤etf
             if not self.conf.get("enable_etf")  and self.all_stocks[i]["category"] == "etf":

@@ -2,10 +2,14 @@ import re, math
 import numpy as np 
 from common.utils import str2timestamp
 from common.tushare_api import TushareApi
+from matplotlib import pyplot as plt
 
-def read():
+def read(f = None):
     try:
-        return input("")
+        if f is None:
+            return input("")
+        else:
+            return f.read_line()
     except EOFError:
         print("log文件结束!")
         raise EOFError
@@ -13,10 +17,10 @@ def read():
         print("Exception: %s" %(e))
         exit(0)
 
-def read_all_item(end_when = "END"):
+def read_all_item(end_when = "END", f = None):
     all_items = [] 
     while True: 
-        line = read()
+        line = read(f)
         if end_when in line:
             print("END")
             break 
@@ -57,7 +61,7 @@ def show_items(all_items, stock_names = [], weekly = False, input_stock = False)
         for item in all_items:
             if item.date == lastest_date:
                 stock_names.append(item.stock)
-        stock_names = stock_names[:1]
+        stock_names = stock_names[:5]
         print("没有指定股票，自动取%s top 5的股票： %s" %(lastest_date, stock_names))
     
     for stock in stock_names:
@@ -175,15 +179,20 @@ class Stats:
                     else:
                         loss_money.append(win)
                     win_date_pair.append((key, win))
-            print("买top %s 【日平均收益: %.2f%%】,  能跑赢大盘%s天, 平均盈利: %.2f%%, 跑输大盘%s天, 平均跑输: %.2f%%" %(
-                buy_topk, np.mean(win_money + loss_money) * 100,
+            print("买top %s 【日平均收益: %.2f%%】中位数收益: %.2f%%,  能跑赢大盘%s天, 平均盈利: %.2f%%, 跑输大盘%s天, 平均跑输: %.2f%%" %(
+                buy_topk, np.mean(win_money + loss_money) * 100, np.percentile(win_money + loss_money, 50) * 100,
                 len(win_money), np.mean(win_money) *100,
                 len(loss_money), np.mean(loss_money) *100
                 ))
-            win_date_pair.sort(key = lambda x : x[1])
+            win_date_pair.sort(key = lambda x : x[0])
+            x = [i for i in range(len(win_date_pair))]
+            y = [item[1] for item in win_date_pair]
+            # plt.title("buy-Top%s" %(buy_topk))
+            # plt.plot(x, y)
             # win_date_pair = win_date_pair[:5] + win_date_pair[-5:]
-            for date, win in win_date_pair:
-                print("    日期: %s 收益: %.2f%%" %(date, win*100))
+            # for date, win in win_date_pair:
+            #     print("    日期: %s 收益: %.2f%%" %(date, win*100))
             # print("    跑赢大盘日期: %s" %(win_keys))
             # print("    跑输大盘日期: %s" %(loss_keys))
+        plt.show()
         return 

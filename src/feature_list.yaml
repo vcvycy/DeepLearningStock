@@ -601,3 +601,13 @@ feature_columns:
       step: 0.02
       min: -0.04
       max: 0.04
+
+  - name : sh_index_close         # 上证指数
+    depends : sh_index.close
+    method : LinearDiscrete 
+    slot : 243
+    args:    
+      start: 0
+      step: 100
+      min: 2800
+      max: 3400

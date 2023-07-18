@@ -1,23 +1,26 @@
 log_file : "../log/model_train.log"
 
-# max_ins: 200000   # debug，最多读多少数据
+# max_ins: 20000   # debug，最多读多少数据
 train_files:  # 只读第一个
   # 全量股票
-  # - ../training_data/data.weekly.20230209_2248
-  # - ../training_data/data.weekly.20230131_1918
-  - ../training_data/data.daily.20230221_0048
-  # - ../training_data/data.daily.20230214_2145
-  # - ../training_data/data.daily.20230213_2025
-  # - ../training_data/data.daily.20230211_2131
-  # - ../training_data/data.daily.20230209_1738
+  - ../training_data/data.daily.20230718_0058
 
 #预处理instance: 处理label, 过滤fid等
 train_data:
   train_ins_percent: 0.8          # 训练集占比(优先于下面这个参数)
+  filters: 
+    valid_tscode : 
+      enable : true
+      regexp: "^[06]0"             # [正则]创业板: ^30; 主板: ^[06]0 科创板: ^68
+    fid_filter:
+      enable: false
+      fids:
+        # - 1444932513133819623
   # validate_date : "20220101"      # 验证集: 没有label且时间在这个后面
   label:
     args: 
       key : next_14d_close_price
+      # key : next_14d_norm_price
   min_fid_occurrence : 0    # 每个fid最少出现几次，低于这个次数，程序直接退出报错
   debug:                 # debug 函数
     fid_whitelist:                # 要debug的fid, 训练的时候也只会训练这些
@@ -27,10 +30,20 @@ train_data:
       # - 1453955548291422233
     slot_whitelist: 
       # - 5
+      # - 134
+      # - 135
+      # - 136 
+      # - 137
+      # - 49
+      # - 50
+      # - 51
+      # - 52 
+      # - 53
+      # - 54
     slot_blacklist:
-      - 82
-      - 83
-      - 11
+      # - 82
+      # - 83
+      # - 11
       # - 230
       # - 231
       # - 232
@@ -44,8 +57,9 @@ train_data:
 # label改成分天算thre: (1) min_3d_price去掉 (2) raw_label -date2thre (3) binarize = 0.0
 
 model: 
+  # load_model : true
   label:
-    binarized: 0.03
+    binarized: 0.00
     # binarized: date_threshold
   loss_type: cross_entropy
   # loss_type: mse
@@ -60,8 +74,8 @@ model:
   mini_batch:
     batch_size: 1000
     epoch : 50000
-  bias_nn_dims: [16,1]
-  bias_attention: True
+  bias_nn_dims: [16,8, 1]
+  bias_attention: False
   # dense_30d: True
 # 调参经验： 
 #  1. learning rate (随着特征增加，原来适合的lr可能变得不适合)

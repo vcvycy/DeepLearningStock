@@ -49,7 +49,8 @@ def main():
             print("%s %s" %(cur_stock["name"], cur_stock["ts_code"]))
             get_kline = TushareApi.get_kline_by_ts_code_weekly if args.weekly else TushareApi.get_kline_by_ts_code
             kline = get_kline(cur_stock["ts_code"], start_date= "20100601", end_date="")
-            kline.draw(date2score = date2score, title = "%s round: %s" %(cur_stock["ts_code"], round))
+            save_path = "image/%s_%s.jpg" %(stock, kline[0].date) if args.stocks is None else None
+            kline.draw(date2score = date2score, title = "%s round: %s" %(cur_stock["ts_code"], round), savefig = save_path)
     return 
     
 if __name__ == "__main__":

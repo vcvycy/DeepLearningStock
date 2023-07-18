@@ -12,13 +12,20 @@ class LabelStep(Step):
         """
             接下来的N天内, 最高/最低/收盘价格
         """
+        # 14～200天前的最高点，最低点. 然后在区间内计算百分比
+        high = max(context.get("raw_feature.price.high_90d_200d"),
+                    context.get("raw_feature.price.high_14d_90d"))
+        low = max(context.get("raw_feature.price.low_90d_200d"),
+                    context.get("raw_feature.price.low_14d_90d"))
+        assert high - low > 0, "%s <= %s" %(high, low)
+
         kline_label = context.get("source.kline_label")
         key = conf.get("key") 
         for d in conf["days"].split(","):
             d = int(d) 
             if len(kline_label) < d:
                 continue # 数据不够，不写label 
-            open_price = kline_label[-1].pre_close    # 前一天收盘价
+            open_price = kline_label[-1].open    # 第二天开盘价作为open price
             if open_price <= 0.01:
                 # 加个太低，不写, 避免出现负数
                 return 
@@ -34,14 +41,14 @@ class LabelStep(Step):
             # 平均收盘价
             mean_price = numpy.mean([kline.close for kline in kline_label[-d:]]) 
             labels["next_%sd_mean_price" %(d)] =  float_trun(mean_price/open_price -1.0)
+            # 归一化(即将最低点 -> 最高点强制设置为涨100%)后的涨幅
+            labels["next_%sd_norm_price" %(d)] = float_trun((close_price - open_price) / (high - low))
         
         if len(kline_label) >=14:
-            open_price = kline_label[-1].pre_close    # 前一天收盘价
             mean_7d_14d = numpy.mean([kline.close for kline in kline_label[-14:-7]]) 
             # print("%s %s" %(kline_label[-1].date, [kline.close for kline in kline_label[-14:-7]]))
             labels["next_7d_14d_mean_price"] = float_trun(mean_7d_14d/open_price -1.0)
         if len(kline_label) >=7:
-            open_price = kline_label[-1].pre_close    # 前一天收盘价
             mean_3d_7d = numpy.mean([kline.close for kline in kline_label[-7:-3]]) 
             # print("%s %s" %(kline_label[-1].date, [kline.close for kline in kline_label[-14:-7]]))
             labels["next_3d_7d_mean_price"] = float_trun(mean_3d_7d/open_price -1.0)
