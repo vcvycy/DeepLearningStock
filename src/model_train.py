@@ -59,6 +59,7 @@ class Model():
         """
         loss_type = self.conf.get("loss_type")
         if loss_type == 'cross_entropy':
+            logits = tf.add_n(logits)
             pred = tf.sigmoid(logits, name = "pred")
             loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=label, logits=logits)  
         # elif loss_type == "mse":
@@ -66,8 +67,35 @@ class Model():
         #     loss = (label - pred) * (label - pred)
         #     print("MSE: %s" %(loss))
         elif loss_type == "mse":
-            pred = logits
+            pred = tf.add_n(logits)
             loss = (pred - label) * (pred -label)
+        elif loss_type == "distill":
+            logits = logits[0]
+            BUCKET = 40
+            print("distill: %s logits : %s" %(label, logits)) 
+            out = self.dense_tower(logits, [16, 8, BUCKET], name="bias_nn_distill")
+            print("out: %s" %(out))
+            def label_to_one_hot(label, interval=0.01, min_value=-0.2, max_value=0.2):
+                interval = (max_value-min_value)/BUCKET
+                indices = tf.clip_by_value(tf.math.floor((label - min_value) / interval), 0, BUCKET -1)
+                bounds = tf.constant([min_value + i * interval + interval/2 for i in range(BUCKET)])
+                return tf.one_hot(tf.cast(indices, tf.int32), depth=BUCKET), bounds
+            # Define the label tensor
+            label_one_hot, bounds = label_to_one_hot(label)
+            # Randomly initialize the out tensor with a shape of [3, 21]
+
+            # Apply the softmax function to the out tensor
+            out_softmax = tf.nn.softmax(out, axis=1) 
+            for i in range(BUCKET):
+                self.emit("out_softmax/%s" %(i), tf.reduce_mean(out_softmax[:, i]))
+
+            # Calculate the predicted value
+            pred = tf.reduce_sum(out_softmax * bounds, axis=1)
+
+            # Calculate the loss
+            loss = tf.nn.softmax_cross_entropy_with_logits(labels=label_one_hot, logits=out)
+            print("loss: %s" %(loss))
+
         else:
             raise Exception("unknown loss_type: %s" %(loss_type))
         self.get_certrain_prob()
@@ -190,14 +218,14 @@ class LRModel(Model):
         logging.info("[BuildDenseNN]dense model: %s fid_index: %s bias_input: %s" %(self.sparse_bias, 
                                 self.slot_bias_fid_index, bias_input))
         
-        logits = 0
+        logits = []
         # 过去30天走势dense图
         if self.conf.get("dense_30d"):
             self.last_30d_close = tf.placeholder(tf.float32, [None, 30], name="last_30d_close")  # 长度为所有fid数量， 1表示有这个Fid， 0表示没有这个fid
             self.emit("last_30d_close", self.last_30d_close)
             last_30d_nn_out = tf.reduce_sum(self.dense_tower(self.last_30d_close, [8, 1], name="dense_30d"), axis = 1)
             self.emit("logits/last_30d_out", last_30d_nn_out)
-            logits += last_30d_nn_out
+            logits.append(last_30d_nn_out)
         
         # 过Dense nn, 得到pred和loss
         # if self.conf.get("bias_attention"):
@@ -216,8 +244,8 @@ class LRModel(Model):
         l2_loss = tf.reduce_sum(bias_input**2) * 1e-5
         self.emit("l2_loss", l2_loss)
         self.losses.append(l2_loss)
-        bias_sum = tf.reduce_mean(bias_input, axis = [1,2])
-        logits += bias_sum 
+        bias_sum = tf.reduce_mean(bias_input, axis = [1,2], keepdims= True)
+        # logits.append(bias_sum)
         self.emit("logit/bias_sum", bias_sum)
         if isinstance(self.conf.get("bias_nn_dims"), list):
             dims = self.conf.get("bias_nn_dims")
@@ -228,12 +256,12 @@ class LRModel(Model):
             # self.emit("dropout_prob", self.dropout_prob)
             # bias_input_flat_dropout =  tf.nn.dropout(bias_input_flat, self.dropout_prob)
 
-            nn_out = tf.reduce_sum(self.dense_tower(bias_input_flat_dropout, dims, name="bias_nn"), axis = 1)
+            nn_out = bias_input_flat_dropout# self.dense_tower(bias_input_flat_dropout, dims, name="bias_nn") 
             self.emit("logit/bias_nn_out", nn_out)
-            logits += nn_out
+            logits.append(nn_out)
             # self.losses.append(tf.reduce_sum(nn_out) * 1e-5)
             logging.info("[BuildDenseNN] towers: %s %s" %(dims, nn_out)) 
-        self.emit("logit/sum", logits)
+        self.emit("logit/sum", tf.add_n(logits))
         logging.info("[BuildDenseNN]bias_input:%s logits: %s" %(bias_input, logits))
 
         return logits
@@ -282,12 +310,12 @@ class LRModel(Model):
 
         # label和预估分
         self.raw_label = tf.placeholder(tf.float32, [None], name = "raw_label") 
-        if self.conf.get("label").get("binarized", None) is not None:
-            threshold = self.conf.get("label").get("binarized", None)
-            logging.info("label 二值化: %s" %(threshold))
-            self.label = tf.where(self.raw_label > threshold, tf.ones_like(self.raw_label), tf.zeros_like(self.raw_label), name = "label")
-        else:
-            self.label = self.raw_label
+        # if self.conf.get("label").get("binarized", None) is not None:
+        #     threshold = self.conf.get("label").get("binarized", None)
+        #     logging.info("label 二值化: %s" %(threshold))
+        #     self.label = tf.where(self.raw_label > threshold, tf.ones_like(self.raw_label), tf.zeros_like(self.raw_label), name = "label")
+        # else:
+        self.label = self.raw_label
         self.pred, loss = self.get_pred_and_loss(logits, self.label)
 
         self.emit("pred", self.pred)

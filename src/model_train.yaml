@@ -59,9 +59,9 @@ train_data:
 model: 
   # load_model : true
   label:
-    binarized: 0.00
+    binarized: None
     # binarized: date_threshold
-  loss_type: cross_entropy
+  loss_type: distill
   # loss_type: mse
   # global_bias : True
   optimizer : 
@@ -74,7 +74,7 @@ model:
   mini_batch:
     batch_size: 1000
     epoch : 50000
-  bias_nn_dims: [16,8, 1]
+  bias_nn_dims: [16]
   bias_attention: False
   # dense_30d: True
 # 调参经验： 
