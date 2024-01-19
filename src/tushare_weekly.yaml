@@ -7,25 +7,26 @@ source:                 # 从哪些地方获取数据
     class: TushareSource
     args:
       api_key: 009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f
-      start_date:            "20200601"  # 620个交易日
+      start_date:            "20100601"  # 620个交易日
+      weekly : true                 # 默认取日线数据，weekly为true取周线
       end_date  :            ""
-      max_workers:           10     # 线程池数量
-      sample_recent_days:    400  # 每个股票采样多少个样本
-      sample_min_train_days: 200    # 至少N天数据作为训练数据
+      max_workers:           15     # 线程池数量
+      sample_recent_days:    1  # 每个股票采样多少个样本
+      sample_min_train_days: 100    # 至少N天数据作为训练数据
       enable_etf : False            # etf是否加入
       skip_st:     True             # 是否过滤ST  
       ##### debug 配置 ########
       # sample_recent_days:   1000   # 每个股票采样多少个样本
       # max_thread:            500    # 最多有多少线程(股票), 用于Debug
-      # whitelist :           "贵州茅台"
+      # whitelist :           "宁德时代"
 
 # step 顺序执行
-thread_num: 30
+thread_num: 15
 step:
   step_list:
-    - name: raw_feature
-      path: step.feature_step
-      class: FeatureStep
+    - name: feature_step
+      path: step.feature_weekly_step
+      class: FeatureWeeklyStep
       args:
         out_key : "raw_feature"
     
@@ -33,7 +34,7 @@ step:
       path: step.fid_extraction_step
       class: FidExtractionStep
       args: 
-        feature_list : "feature_list.yaml"
+        feature_list : "feature_list_weekly.yaml"
         in_key : "raw_feature" 
         out_key: "fids" 
         skip_none : False    # 跳过none特征，不抽取fid
@@ -46,21 +47,14 @@ step:
         label_confs:
           - method : next_n_days_method   # 表示接下来days天，最高涨幅
             conf: 
-              days: 1,3,7,14,30 
+              days: 1,2, 3,4, 7,14 
 
     - name: write_instance  # 保存训练数据
       path: step.write_instance_step
       class: WriteInstanceStep
       args:
-        save_path  : "../training_data/data.daily"  # 保存的文件 
+        save_path  : "../training_data/data.weekly"  # 保存的文件 
         date_suffix : "%Y%m%d_%H%M"                 
         cache_size : 10000    # N个instance写一次文件
-        write_raw_feature: True # 是否写raw_feature, 用于Debug
-          
-    - name: write_sqlite3  # 写到数据库
-      path: step.write_sqlite3_step
-      class: WriteSQLite3Step
-      args:
-        cache_size : 100    # N个instance写一次文件
         write_raw_feature: True # 是否写raw_feature, 用于Debug
           

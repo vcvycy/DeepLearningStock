@@ -1,7 +1,14 @@
 #coding=utf8
 import time
 import struct
+import psutil
 
+def get_memory_usage():
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    memory_usage = memory_info.rss  # 获取实际物理内存占用，单位为字节
+    memory_usage_mb = memory_usage / (1024 * 1024)  # 转换为MB 
+    print(f"当前内存占用：{memory_usage_mb} MB")
 # 浮点数保留k位小数
 def float_trun(f, k = 3):
     try:
@@ -54,15 +61,25 @@ def enum_instance(path, max_ins = 1e10):
       max_ins: 最多读取多少样本
     """
     from common.stock_pb2 import Instance
+    from tqdm import tqdm
     if not isinstance(path, list):
         path = [path]
+    bar = tqdm(total = 1000000)
+    hash_set = set()
     for p in path:
         f = open(p, "rb")
         while True:
             size, data = read_file_with_size(f, Instance)
             if size == 0 or max_ins <= 0:
                 break
+            hash_key = data.ts_code + data.date
+            if hash_key in hash_set:
+                continue
+            hash_set.add(hash_key)
             max_ins -= 1
+            if max_ins %1000 == 0:
+                get_memory_usage()
+            bar.update(1)
             yield data
     return 
 
