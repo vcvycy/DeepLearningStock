@@ -1,6 +1,8 @@
-protobuf
+protobuf==4.24.1
 numpy
-tensorflow
+tensorflow==1.15.0
 tushare
 bottle
 pyyaml
+mplfinance
+psutil

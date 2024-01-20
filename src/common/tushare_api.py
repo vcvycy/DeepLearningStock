@@ -27,7 +27,7 @@ def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切
         raise Exception("[TushareApi] 重试%s次仍未成功 exit" %(retry))
         os._exit()
     return wrapper
-
+ts.set_token('009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f')
 client = ts.pro_api("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f")
 # Tushare的api封装
 class TushareApi:
