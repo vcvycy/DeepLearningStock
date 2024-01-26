@@ -72,7 +72,7 @@ class MultiThreadSource(Source):  # 多线程source
                 self.context_consumed += 1
                 return ctx
             except Exception as e:
-                print("get_context Exception: %s all_finish: %s" %(e, all_finish))
+                # print("get_context Exception: %s all_finish: %s" %(e, all_finish))
                 # 取数据超时且在取数前, 所有线程都跑完了, 则返回None
                 if all_finish:
                     return None 

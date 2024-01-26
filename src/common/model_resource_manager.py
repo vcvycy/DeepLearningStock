@@ -5,38 +5,10 @@ import yaml
 import logging
 import re
 # from common.tushare_api import *
-# 全局通用
-
-class MFeatureColumn:
-    def __init__(self, fc):
-        self.name = ""
-        self.slot = fc.slot
-        self.fid = fc.fids[0]
-        self.joined_raw_feature = ",".join(fc.raw_feature) #[r for r in fc.raw_feature] 
-        self.joined_extracted_features = ",".join(fc.extracted_features) # [f for f in fc.extracted_features]
-        self.dense = []
-    @property
-    def fids(self):
-        return [self.fid]
-    @property
-    def raw_feature(self):
-        return [self.joined_raw_feature]
-    @property
-    def extracted_features(self):
-        return [self.joined_extracted_features]
-class MInstance:
-    def __init__(self, ins):
-        self.feature = [MFeatureColumn(fc) for fc in ins.feature]
-        self.label = {
-            k : ins.label[k] for k in ins.label 
-        }
-        self.ts_code = ins.ts_code
-        self.date = ins.date
-        self.name = ins.name
-        self.total_mv = ins.total_mv
-
 class RM: 
     def ins_need_filter(self, ins, filters):
+        if filters["only_etf"]:
+            return "ETF" not in ins.name #or "LOF" not in ins.name
         if "valid_tscode" in filters:
             name = "valid_tscode" 
             conf = filters[name]
@@ -73,6 +45,7 @@ class RM:
         train_files = self.conf.get("train_files")
         suffix = train_files[0].split(".")[-1] 
         self.log_file = "%s.%s" %(self.conf.get("log_file"), suffix)
+        self.json_result_file = "%s.%s" %(self.conf.get("json_result"), suffix)
         print("日志文件： %s" %(self.log_file))
         logging.basicConfig(filename=self.log_file, format = '%(levelname)s %(asctime)s %(message)s', level=logging.DEBUG)
         logging.info("conf: %s" %(self.conf)) 
@@ -82,9 +55,8 @@ class RM:
         max_ins = self.conf.get("max_ins")
         self.filter_reason = {}
         for ins in enum_instance(train_files, max_ins if max_ins is not None else 1e10):
-            if ins.date < '20210601':
+            if ins.date < '20200601':
                 continue
-            ins = MInstance(ins)
             if self.ins_need_filter(ins, filters):
                 continue
             date = ins.date

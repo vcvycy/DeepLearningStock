@@ -8,8 +8,13 @@ from common.stock_pb2 import *
 import math
 import time
 import os
+import threading
 def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切断)
+    lock = threading.Lock()
     def wrapper(*args, **kwargs):
+        with lock:
+            limit_qps = 250
+            time.sleep(1.0/limit_qps)
         # return fun(*args, **kwargs)
         retry = 6
         for i in range(retry):
@@ -23,9 +28,9 @@ def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切
                     time.sleep(10)
                 else:
                     time.sleep(1)
-        # 如果6次都失败则跑到这里
+        # 如果6次都失败则跑到这里   689009.SH 这个一直失败
         raise Exception("[TushareApi] 重试%s次仍未成功 exit" %(retry))
-        os._exit()
+        return
     return wrapper
 ts.set_token('009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f')
 client = ts.pro_api("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f")
@@ -64,7 +69,7 @@ class TushareApi:
                 "category" : "etf"
             })
             TushareApi.__ts_code2type[value["ts_code"]] = "etf"
-        print("基金总数 %s, 过滤后剩下: %s" %(df.shape[0], len(data)))
+        print("ETF总数 %s, 过滤后剩下: %s" %(df.shape[0], len(data)))
         # 拉取股票数据
         df = client.stock_basic(**{
             "ts_code": "",
@@ -222,7 +227,8 @@ if __name__ == "__main__":
     # print(kline)
     # print(kline.get_ma_reverse_times(k = 30))
     kline = TushareApi.get_kline_by_ts_code("000001.SZ", start_date= "20200601", end_date="")
-    print(kline.get_ma_reverse_times(k = 10))
+    print(kline)
+    # print(kline.get_ma_reverse_times(k = 10))
     # kline.draw()
     # print(kline[0])
     # print(kline.reduce("close", 30, "ma"))

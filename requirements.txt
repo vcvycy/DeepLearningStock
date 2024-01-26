@@ -1,4 +1,4 @@
-protobuf==4.24.1
+protobuf==3.20.1
 numpy
 tensorflow==1.15.0
 tushare

@@ -5,6 +5,7 @@ import time
 import struct
 from queue import Queue
 import threading
+from tqdm import tqdm
 
 class WriteInstanceStep(Step):
     def __init__(self, conf):
@@ -17,6 +18,7 @@ class WriteInstanceStep(Step):
         self.cache_size = conf.get("cache_size", 30)
         self.cache = Queue()
         self.last_write_time = time.time()  # 最后一次写文件的时间
+        self.pbar = tqdm(total = 99999)
         # 
         self.write_mutex = threading.Lock()
         self.write_raw_feature = conf.get("write_raw_feature", False)
@@ -69,11 +71,11 @@ class WriteInstanceStep(Step):
         # 把二进制数据+字节数写到文件中: 写到队列为空或者写cache个
         self.last_write_time = time.time()
         write_cnt = self.cache_size
-        print("wriet_instance: size: %s" %(self.cache.qsize()))
         while not self.cache.empty() and write_cnt > 0:
             item = self.cache.get()
             write_file_with_size(self.f, item.SerializeToString()) 
             write_cnt -= 1
+            self.pbar.update(1)
         self.write_mutex.release()
         return 
 
@@ -88,6 +90,6 @@ class WriteInstanceStep(Step):
         ins = self.pack_instance(context)
         self.add_instance(ins)
         # cache数足够了，则写文件
-        if self.cache.qsize() >= self.cache_size or (self.cache.qsize() > 0 and self.last_write_time < time.time() -10):
+        if self.cache.qsize() >= self.cache_size or (self.cache.qsize() > 0 and self.last_write_time < time.time() -2):
             self.write_instance()
         return 

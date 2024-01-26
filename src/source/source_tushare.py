@@ -43,6 +43,7 @@ class TushareSource(MultiThreadSource):
                 kline = TushareApi.get_kline_by_ts_code_weekly(ts_code, start_date, end_date)  
             else:
                 kline = TushareApi.get_kline_by_ts_code(ts_code, start_date, end_date)  
+            assert kline is not None, "kline is None"
             if kline.reduce("amount", 30, "ma") < 5000:
                 # print("%s 成交量太低， 过滤" %(kline.ts_code))
                 self.thread_finish_num +=1 
@@ -78,20 +79,23 @@ class TushareSource(MultiThreadSource):
             ts_code = self.all_stocks[i]["ts_code"]
             if self.whitelist is not None:
                 if self.whitelist not in name and self.whitelist not in self.all_stocks[i]["ts_code"]:
-                    continue                 
+                    continue
+            is_etf = self.all_stocks[i]["category"] == "etf"     
             # 是否过滤ST
-            if self.conf.get("skip_st") == True and 'ST' in name:
-                continue
-            if "退" in name:
-                # print("filter: %s" %(name))
-                continue
-            if ts_code[0] not in ["0", "6"]:
-                # print("ts_code: %s" %(ts_code))
-                continue
-            # 是否过滤etf
-            if not self.conf.get("enable_etf")  and self.all_stocks[i]["category"] == "etf":
-                # print("disable_etf: ETF: %s被过滤" %(self.all_stocks[i]))
-                continue
+            if is_etf:
+                if not self.conf.get("enable_etf"):
+                    continue
+            else:
+                if not self.conf.get("enable_stock"):
+                    continue
+                if self.conf.get("skip_st") == True and 'ST' in name:
+                    continue
+                if "退" in name:
+                    # print("filter: %s" %(name))
+                    continue
+                if ts_code[0] not in ["0", "3", "6"]:
+                    # print("ts_code: %s" %(ts_code))
+                    continue
             # if self.all_stocks[i]["category"] != "etf":
             #     continue
             self.add_thread(TushareSource.gen_contexts_thread_fun, i) 

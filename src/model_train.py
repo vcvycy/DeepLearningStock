@@ -10,8 +10,10 @@ import logging
 import math
 import numpy as np
 from model_train_data import *
+import json
 import time
 # time.sleep(3600*2)
+from datetime import datetime
 
 class Model():
     def __init__(self):
@@ -21,6 +23,21 @@ class Model():
         self.losses = []
         self.sess = tf.Session()
         self.writer = tf.summary.FileWriter("./tboard/", self.sess.graph)  
+        self.json_result = {
+            "start_at" :  datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "conf" : get_rm().conf
+        }
+    def write_json_result(self):
+        save_file = get_rm().json_result_file
+        self.json_result.update({
+            "end_at" : datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        logging.info("准备写result json文件到: %s" %(save_file))
+        open(save_file, "a").write(json.dumps(model.json_result, cls=NumpyEncoder, ensure_ascii=True))
+        open(save_file, "a").write("\n")
+        logging.info("json写入成功!!!")
+        return 
+    
     #     self.init_fid2index()
     #     return 
     # def init_fid2index(self):
@@ -88,7 +105,7 @@ class Model():
             out_softmax = tf.nn.softmax(out, axis=1) 
             for i in range(BUCKET):
                 self.emit("out_softmax/%s" %(i), tf.reduce_mean(out_softmax[:, i]))
-
+            self.distill_out_softmax = out_softmax
             # Calculate the predicted value
             pred = tf.reduce_sum(out_softmax * bounds, axis=1)
 
@@ -410,16 +427,24 @@ class LRModel(Model):
             batch = items[:batch_size]
             items = items[batch_size:]
             feed_dict = self._get_model_feed_dict(batch, training = False, dropout_prob = 1.0)
-            pred_val, certainly_val = self.sess.run([self.pred, self.certainly_raw], feed_dict = feed_dict)
+            pred_val, certainly_val, distill_out_softmax,   = self.sess.run([self.pred, self.certainly_raw, \
+                                            self.distill_out_softmax], feed_dict = feed_dict)
             for i in range(len(batch)):
+                # fids = batch[i].fids
+                
+                fids = batch[i].fids
+                fids_label = np.mean([train_data.fid2avg_label.get(fid, 0) for fid in fids])
                 results.append({
                     "name" : batch[i].name,
                     "date" : batch[i].date,
                     "pred" : pred_val[i],
-                    "item" : batch[i],
+                    "fids" : batch[i].fids,
+                    "fids_label" : fids_label,
                     "label" : batch[i].label,
+                    # "distill_out_softmax" : distill_out_softmax,
+                    "distill_var" : np.var(distill_out_softmax),
                     "certainly" : certainly_val[i],
-                    "raw_label" : batch[i].raw_label if batch[i].raw_label is not None else 999
+                    "raw_label" : batch[i].raw_label if batch[i].raw_label is not None else math.nan
                 })
         #
         results.sort(key = lambda x : -x["pred"])
@@ -432,18 +457,18 @@ class LRModel(Model):
                 valid_cnt += 1
                 if  r["label"]> 0:
                     correct_cnt += 1 
-            # 获取topk fid
-            fids = r["item"].fids
-            fids_label = np.mean([train_data.fid2avg_label.get(fid, 0) for fid in fids])
             logging.info("[Top_%s] %s %s 概率: %.4f fid_label_avg: %.4f label: %s raw_label: %.3f 确定性: %.3f 正确率: %.2f" %(i, 
-                        r["name"], r["date"], r["pred"], fids_label, r["label"], r["raw_label"], r["certainly"], 1.0*correct_cnt/max(1, valid_cnt)))
+                        r["name"], r["date"], r["pred"], r["fids_label"], r["label"], r["raw_label"], r["certainly"], 1.0*correct_cnt/max(1, valid_cnt)))
             if i >= 1000:
                 continue
-            topk_fid_val = get_topk_val(fids, self.fid2bias_val)
-            for fid, fid_bias in topk_fid_val:
-                raw, feature = train_data.fid2feature[fid]
-                logging.info("    [Top fid] slot: %3s fid: %19s, val: %.3f label: %.3f feature: %s, example_raw: %s" %(
-                    fid>>54, fid, fid_bias, train_data.fid2avg_label.get(fid, 0), feature, raw))
+            if i < 1000:
+                fids = r['fids']
+                topk_fid_val = get_topk_val(fids, self.fid2bias_val)
+                for fid, fid_bias in topk_fid_val:
+                    raw, feature = train_data.fid2feature[fid]
+                    logging.info("    [Top fid] slot: %3s fid: %19s, val: %.3f label: %.3f feature: %s, example_raw: %s" %(
+                        fid>>54, fid, fid_bias, train_data.fid2avg_label.get(fid, 0), feature, raw))
+        self.json_result["validate"] = results
         return 
 
 if __name__ == "__main__":
@@ -453,5 +478,8 @@ if __name__ == "__main__":
     model = LRModel()
     model.train()
     model.validate()
+    model.write_json_result()
     logging.info("END")
+
     print(" python test_parse_log.py  < %s" %(get_rm().log_file))
+    print(" python3 test_part_result.py -p %s" %(get_rm().json_result_file))
