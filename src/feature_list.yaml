@@ -13,6 +13,7 @@ feature_columns:
     depends : basic.pe
     method : LogDiscrete 
     slot : 1
+    description: "市盈率"
     args:   
       base: 2
       min: 7
@@ -22,6 +23,7 @@ feature_columns:
     depends : basic.turnover_rate 
     method : LinearDiscrete 
     slot : 2
+    description: "换手率"
     args:   
       step: 5
       max: 35
@@ -30,6 +32,7 @@ feature_columns:
     depends : basic.turnover_rate_f 
     method : LinearDiscrete 
     slot : 3
+    description: "换手率，流通股"
     args:   
       step: 5
       max: 50
@@ -38,6 +41,7 @@ feature_columns:
     depends : basic.turnover_rate_f_3d
     method : LinearDiscrete 
     slot : 4
+    description: "换手率(流通股)3日平均"
     args:   
       step: 5
       max: 50
@@ -46,6 +50,7 @@ feature_columns:
     depends : basic.turnover_rate_f_7d
     method : LinearDiscrete 
     slot : 5
+    description: "换手率(流通股)7日平均"
     args:   
       step: 5
       max: 50
@@ -54,6 +59,7 @@ feature_columns:
     depends : basic.turnover_rate_f_30d
     method : LinearDiscrete 
     slot : 6
+    description: "换手率(流通股)30日平均"
     args:   
       step: 3
       max: 30
@@ -63,11 +69,41 @@ feature_columns:
     depends : basic.total_mv
     method : LogDiscrete 
     slot : 7
+    description: "市值"
     args:   
       min: 500000 # 最低50亿
       max : 20000000 # 最高2000亿(top 15)
       base: 2
 
+  # 省份
+  - name : province
+    depends : company.province
+    slot : 8
+    description: "上市省份"
+    method : BaseMethod
+
+  # 员工数
+  - name : employees
+    depends : company.employees
+    method : LogDiscrete 
+    slot : 9
+    description: "员工数"
+    args:   
+      min: 100
+      max : 10000 # 最多2万人
+      base: 2
+
+  # 注册资本
+  - name : reg_capital
+    depends : company.reg_capital
+    method : LogDiscrete 
+    slot : 10
+    description: "注册资本"
+    args:   
+      min: 8000
+      max : 450000 # 最多45亿
+      base: 2
+    
   - name : week
     slot :  11
     depends : time.week
@@ -76,6 +112,7 @@ feature_columns:
     depends : recent_rise.1d
     method : LinearDiscrete 
     slot : 49
+    description: "最近1天涨跌"
     args:   
       start: 0
       step: 0.032

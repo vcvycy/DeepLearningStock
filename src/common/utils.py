@@ -92,7 +92,7 @@ def str2timestamp(timestr, format = "%Y-%m-%d %H:%M:%S"):
     timeArray = time.strptime(timestr, format) 
     return int(time.mktime(timeArray))
 
-def timestamp2str(ts, format = "%Y-%m-%d %H:%M:%S"):
+def timestamp2str(ts = int(time.time()), format = "%Y-%m-%d %H:%M:%S"):
     return time.strftime(format,time.localtime(int(ts)))
 
 def coloring(string, pattern = ".*", color = "red"):
@@ -274,6 +274,71 @@ def print_json(item, dep= 0):
                 print_json(item[i], dep + 1)
             else:
                 print_val(item[i])
+    return 
+
+def group_by_key(all_items, key):
+    key2items = {}
+    for item in all_items:
+        if isinstance(key, str):
+            k = item[key]
+        else:
+            k = key(item)
+        if k not in key2items:
+            key2items[k] = []
+        key2items[k].append(item)
+    return key2items
+    
+def read_parquet_or_jsonl(path_glob):
+    """ 读取 Parquet 文件, 默认为jsonl (支持glob匹配)
+    """
+    import pandas as pd
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    def read_one(path):
+        path = process_path(path)   # hdfs支持
+        if path.split(".")[-1] == 'parquet':
+            df = pd.read_parquet(path)
+            return [row.to_dict() for _, row in df.iterrows()]
+        elif path[-4:] == ".csv":
+            import csv
+            # with open(path, 'r') as file:  # 这个会出现\ufeff
+            with open(path, 'rU', encoding='utf-8-sig') as file:
+                csv_reader = csv.DictReader(file)
+                return [row for row in csv_reader]
+        else:
+            return [json.loads(l) for l in open(path, "r").readlines() if l.strip() != ""]
+    items = []
+    paths = myglob(path_glob)
+    for i, path in enumerate(paths):
+        items.extend(read_one(path))
+        print(f"[read_parquet_or_jsonl] 读取文件{i+1}/{len(paths)}: {path} current_size: {len(items)}")
+    return items
+
+def write_parquet_or_jsonl(json_list, output_file):
+    """ 写jsonl或者parquet文件，根据output_file的后缀来判断
+    """
+    import pandas as pd
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    if output_file.endswith(".parquet"):
+        # parquet文件 
+        df = pd.DataFrame(json_list)
+        logging.info("df: %s" %(df))
+        # 将 DataFrame 转换为 PyArrow 表格
+        table = pa.Table.from_pandas(df)
+        # 将 PyArrow 表格写入 Parquet 文件
+        pq.write_table(table, output_file)
+        print("[*] write_parquet_or_jsonl 保存为parquet文件: %s" %(output_file))
+    elif output_file.endswith(".csv"):
+        # csv文件
+        df = pd.DataFrame(json_list)
+        df.to_csv(output_file, index=False)
+    else:
+        # jsonl 文件
+        with open(output_file, 'w') as f:
+            for item in json_list:
+                json_line = json.dumps(item, ensure_ascii=False)
+                f.write(json_line + '\n')
     return 
 if __name__ == "__main__": 
     # print_json("")

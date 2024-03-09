@@ -15,7 +15,10 @@ def main():
     while True:
         round += 1
         print('-' * 200)
-        all_items = read_all_item(end_when = "END")
+        try:
+            all_items = read_all_item(end_when = "END")
+        except:
+            break
         if len(all_items) < 10000:
             continue 
         print("round: %s" %(round))
@@ -24,7 +27,7 @@ def main():
         #     continue
         if args.stocks == "" : 
             stock_names = []
-            lastest_date = np.max([item.date for item in all_items])
+            lastest_date = np.max([item.date for item in all_items]) if args.date is None else args.date
             for item in all_items:
                 if item.date == lastest_date:
                     stock_names.append(item.stock)
@@ -58,5 +61,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', '--weekly', action='store_true')  # 周线还是日线
     parser.add_argument('-t', '--stocks', type=str, default = "")  # 可以包含多个: 比如宁德时代,西安饮食
+    parser.add_argument('-d', '--date', type=str, default = None)  # 取某一天最高的股票
     args = parser.parse_args()
     main()

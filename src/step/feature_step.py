@@ -258,6 +258,25 @@ class FeatureStep(Step):
         feature["close"] = RM.sh_index[sh_index_offset].close
         return feature 
     
+    def get_company_feature(self, context):
+        """  公司相关: 注册资本、员工数等
+        """
+        kline = context.get("source.kline") 
+        ts_code = kline.ts_code
+        if ts_code not in RM.ts_code2company:
+            feature = {
+                "province" : "EMPTY",
+                "employees" : "EMPTY",
+                "reg_capital" : "EMPTY",
+            }
+        else:
+            company = RM.ts_code2company[ts_code]
+            feature = {
+                "province" : company.province,
+                "employees" : company.employees,
+                "reg_capital" : company.reg_capital
+            }
+        return feature
     def _execute(self, context):
         """
           原始特征抽取
@@ -281,6 +300,8 @@ class FeatureStep(Step):
             "sh_index" : self.get_sh_index_feature(context),
             # 均线反转次数
             # "trend_reversal" : self.get_ma_reverse(context)
+            # company
+            "company" : self.get_company_feature(context)
         } 
         context.set(self.out_key, feature)
         return 

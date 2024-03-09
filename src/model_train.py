@@ -116,7 +116,7 @@ class Model():
         else:
             raise Exception("unknown loss_type: %s" %(loss_type))
         self.get_certrain_prob()
-        # loss *= self.certainly
+        loss *= self.certainly
         loss = tf.reduce_sum(loss, name = "loss")
         return pred, loss
     
@@ -198,14 +198,19 @@ class LRModel(Model):
         bias_num = self.fid_num
         # weight_initer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
         self.sparse_bias = self.get_slot_concat_embedding("bias", gather = False, size = 4) # tf.get_variable(name="bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
-        self.certain_bias =  tf.reduce_sum(self.get_slot_concat_embedding("certain_bias"), axis= 1) # tf.get_variable(name="certain_bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
+        self.certain_bias =  self.get_slot_concat_embedding("certain_bias", gather = True, size = 4) # tf.get_variable(name="certain_bias", dtype=tf.float32, shape=[bias_num], initializer=tf.zeros_initializer())
         logging.info("bias num: %s %s" %(bias_num, self.sparse_bias)) 
         return 
 
     def get_certrain_prob(self):
         # 每个样本的确定性, 为0.5 ~1.5对loss加权， 确定性高的loss大，低的loss小
         input = self.certain_bias
-        logits = tf.reduce_sum(input, axis = 1)
+        print("[certain] input: %s" %(input))
+        input =  tf.layers.flatten(input)
+        print("[certain] flatten input: %s" %(input))
+
+        logits = tf.reduce_sum(self.dense_tower(input, [8, 1], name="certain_prob"), axis = 1)
+        # logits = tf.reduce_sum(input, axis = 1)
         self.emit("certainly/logits", logits)
         certainly_raw= tf.sigmoid(logits) + 0.01
         self.emit("certainly/raw_val", certainly_raw)
@@ -469,6 +474,7 @@ class LRModel(Model):
                     logging.info("    [Top fid] slot: %3s fid: %19s, val: %.3f label: %.3f feature: %s, example_raw: %s" %(
                         fid>>54, fid, fid_bias, train_data.fid2avg_label.get(fid, 0), feature, raw))
         self.json_result["validate"] = results
+        self.json_result["fid_summary"] = train_data.fid2summary
         return 
 
 if __name__ == "__main__":

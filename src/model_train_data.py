@@ -62,6 +62,7 @@ class TrainData():
     def __debug(self):
         # if len(self.fid_whitelist) == 0 and len(self.slot_whitelist)== 0:
         #     return 
+        self.fid2summary = []
         self.fid2avg_label = {} 
         fid2label = {}
         for train_item in self.train_items: 
@@ -82,6 +83,13 @@ class TrainData():
                 raw_fea, extract_fea = self.fid2feature[fid]
                 logging.info("[TrainData-Debug] (slot: %3d): %s(raw: %20s, feature: %10s) , ins_num: %d, label_mean: %.3f", fid>>54,
                                 fid, raw_fea, extract_fea, len(labels), avg_label)
+                self.fid2summary.append({
+                    "fid" : fid,
+                    "slot" : fid >> 54,
+                    "avg_label" : avg_label,
+                    "example_raw" : raw_fea, 
+                    "feature" : extract_fea
+                })
         logging.info("[TrainData-Debug] 所有可训练的slot: %s(%s)" %(len(self.slots_set), self.slots_set))
         return 
 
@@ -117,7 +125,7 @@ class TrainData():
     def __init_train_items(self):
         """
         """
-        self.train_item_weights = []
+        # self.train_item_weights = []
         self.train_items = []
         self.validate_items = []
         for ins in self.valid_instances:
@@ -131,16 +139,16 @@ class TrainData():
             if label is not None and ins.date < get_rm().validate_date:
                 train_item = TrainItem(fids, label, raw_label, name2dense, ts_code = ins.ts_code, date = ins.date)
                 self.train_items.append(train_item)
-                self.train_item_weights.append(self.__init_train_item_sample_weight(train_item))  # 训练样本权重
+                # self.train_item_weights.append(self.__init_train_item_sample_weight(train_item))  # 训练样本权重
             else: 
                 # 仍然写入label: 如果可用，则用户回测
                 self.validate_items.append(TrainItem(fids, label, raw_label, name2dense, ts_code = ins.ts_code, date = ins.date, name = ins.name))  
-        logging.info("train_item weights: %s" %(self.train_item_weights[:100]))
+        # logging.info("train_item weights: %s" %(self.train_item_weights[:100]))
         # 验证集
         assert len(self.validate_items) > 0, "验证集大小为0"
-        logging.info("第一个TrainItem: %s" %(str(self.train_items[0])))
         logging.info("valid instance数: %s, 验证集: %s, 可训练数量: %s" %(len(self.valid_instances), 
                 len(self.validate_items), len(self.train_items)))
+        logging.info("第一个TrainItem: %s" %(str(self.train_items[0])))
         return 
 
     def __init_fid2occu(self):
@@ -236,7 +244,7 @@ class TrainData():
         if len(self.batch_idx) < batch_size:
             for i in range(len(self.train_items)):
                 train_item = self.train_items[i]
-                w = self.train_item_weights[i]
+                w = 1 # self.train_item_weights[i]
                 self.batch_idx += [i] * w 
             random.shuffle(self.batch_idx)
             logging.info("refresh batch_idx: %s after shuffle: %s" %(len(self.batch_idx), self.batch_idx[:10]))

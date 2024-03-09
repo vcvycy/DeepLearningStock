@@ -6,6 +6,7 @@ def step_read_log(round, end_when = "END"):
     all_items = []
     stats = Stats(prefix = "第%s次运行结果" %(round))
     _all_items = read_all_item()
+    print("items size: %s" %(len(_all_items)))
     for item in _all_items:
         if item.label is None or item.raw_label > 900:
             continue
@@ -13,6 +14,7 @@ def step_read_log(round, end_when = "END"):
             stats.add(item.date, item) 
             stats.add("ALL_TIME", item)
             all_items.append(item)
+    print("过滤掉最近没label的: %s" %(len(all_items)))
     return stats, all_items
 
 def step_analysis(round, stats, all_items):

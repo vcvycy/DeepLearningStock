@@ -27,7 +27,7 @@ def analyse_1(all_items):
             "平均Label" : "%.2f%%" %(100.0*np.mean([item['label'] for item in items])),
             coloring("平均原始Label", color = 'green') : coloring("%.2f%%" %(100.0*np.mean([item['raw_label'] for item in items])), color = 'green'),
             "平均排名" : "%.0f" %np.mean([item['rank'] for item in items]),
-            "AvgLabel-half" : "%.2f%%" %(100.0*np.mean([item['label'] for item in items[int(n/2):n]])),
+            "AvgLabel-靠后一半" : "%.2f%%" %(100.0*np.mean([item['label'] for item in items[int(n/2):n]])),
         }
         return ret
     topk = 1
@@ -101,7 +101,7 @@ def analyse_3(all_items):
     all_items.sort(key = lambda x : x['rank'])
     date2items = group_by_key(all_items, "date") 
 
-    for topk in [2,4]:#, 8, 9999, -128, -32, -8]:
+    for topk in [2,4, 8, 16, 32, 64, 128, 9999]:#, 8, 9999, -128, -32, -8]:
         date2topk_profit = {}
         for date in date2items:
             if topk > 0:
@@ -115,16 +115,49 @@ def analyse_3(all_items):
     mprint(summary)
     return 
 
+def analyse_4(all_items):
+    """计算distill softmax的确定性(确定性越高，说明方差越大)
+    """
+    all_items = [item for item in all_items if item['rank'] < 10000]
+    all_items.sort(key = lambda x : -x['distill_var'])
+    i = 20
+    while True:
+        confidence = np.mean([math.fabs(item['distill_var']) for item in all_items[:i]])
+        pred_diff = np.mean([math.fabs(item['label'] - item['pred']) for item in all_items[:i]])
+        print(f"top {i} 预估确定性是: %.5f 预估和label差值: %.5f" %(confidence, pred_diff))
+        if i > len(all_items):
+            break
+        i *= 2
+    mprint(all_items[:30] + all_items[-10:], col_names = ["name", "date", "rank", "label", "pred", "distill_var"])
+    return 
+def analyse_5(all_items):
+    dates = list(set([item['date'] for item in all_items]))
+    dates.sort(key = lambda x : -int(x))
+    for d in dates[:2]:# + dates[30:40]:
+        cur_items = [item for item in all_items if item['date'] == d][:10]
+        summary = {
+            "name" : "ALL",
+            "date" : d,
+            "rank" : int(np.mean([x['rank'] for x in cur_items])),
+            "label" : np.mean([x['label'] for x in cur_items]) if cur_items[0]['label'] else '-',
+            "pred" : np.mean([x['pred'] for x in cur_items]),
+            "distill_var" : np.mean([x['distill_var'] for x in cur_items]),
+        }
+        mprint(cur_items +[summary], col_names = ["name", "date", "rank", "label", "pred", "distill_var"], \
+                title = f"{d}的收益最高股票")
+    return 
 def analyse(round, all_items):
     all_items.sort(key = lambda x : -x['pred'])
     for i, item in enumerate(all_items):
         item['rank'] = i + 1
     # print("原始items size: %s" %(len(all_items))) 
-    all_items = [item for item in all_items if item['label'] is not None and not math.isnan(item['raw_label'])]
+    items_has_label = [item for item in all_items if item['label'] is not None and not math.isnan(item['raw_label'])]
     # print("过滤掉最近没label的: %s" %(len(all_items)))
-    analyse_1(all_items)
-    analyse_2(all_items)
-    analyse_3(all_items)
+    analyse_1(items_has_label)
+    analyse_2(items_has_label)
+    analyse_3(items_has_label)
+    analyse_4(items_has_label)
+    analyse_5(all_items)
     return 
 def main(path):
     with open(path, "r") as f:
@@ -132,6 +165,7 @@ def main(path):
     # Use enumerate to get the round number
     for round, line in enumerate(lines):
         data = json.loads(line)
+        # input(data['validate'][0])
         print(f"round_{round} start {data['start_at']}".center(100, '*'))
         analyse(round, data['validate'])
     return

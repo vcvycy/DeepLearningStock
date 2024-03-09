@@ -1,6 +1,7 @@
 from step.step import Step
 import yaml
 import source.feature_hash as feature_hash 
+from common.utils import *
 # class FeatureColumn:
 class FidExtractionStep(Step):
     def __init__(self, conf):
@@ -66,6 +67,7 @@ class FidExtractionStep(Step):
             # 自动分配slot
             slot = fc.get("slot") 
             if slot is None:
+                assert False, "slot is None"
                 slot = self.get_auto_slot(name)
             else:
                 assert slot < self.feature_list.get("auto_slot_start", 500)  # 手工配置的slot不能重复

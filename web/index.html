@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Model Result Viewer</title>
+    <!-- Add Vue.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <!-- Add Axios from CDN for HTTP requests -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .container {
+            margin: 20px;
+        }
+        .select-box {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container">
+        <div class="select-box">
+            <h3> 请求模型: </h3>
+            <table>
+                <tr>
+                    <td>
+                        模型结果文件
+                    </td>
+                    <td>
+                        <select id="modelResultList" v-model="model_result_req.path">
+                            <option disabled value="">Please select one</option>
+                            <option v-for="path in paths" :value="path">{{ path }}</option>
+                        </select> 
+                    </td>
+                </tr>
+                <tr>
+                    <td>取topk</td>
+                    <td><input v-model="model_result_req.topk"></input></td>
+                </tr>
+                <tr>
+                    <td>最低的certainly</td>
+                    <td><input v-model="model_result_req.min_certainly"></input></td>
+                </tr>
+                <tr>
+                    <td>
+                        往前7天推荐过相同股票，是否过滤
+                    </td>
+                    <td>
+                        <input type="checkbox" v-model="model_result_req.dedup">
+                    </td>
+                </tr>
+                <tr v-if="model_result_in_progress">
+                    <td colspan="2" style="color: red; text-align: center;">模型请求中....</td>
+                </tr>
+                <tr v-if="model_result_in_progress == false">
+                    <td colspan="2" style="color: red; text-align: center;"><button v-on:click="fetchModelResult">Go</button></td>
+                </tr>
+            </table>
+
+        </div>
+        <h3 v-if="model_result_rsp.length > 0">模型结果: {{model_result_show_idx + 1}}/{{model_result_rsp.length}}次</h3>
+        
+        <div v-for="(item, index) in model_result_rsp" :key="index">
+            <input 
+                type="radio" 
+                :value="index" 
+                v-model="model_result_show_idx">
+                <label >显示第{{ index+1 }}次运行结果 : {{ to_percent(model_result_rsp[index].summary.return_all) }}</label>
+            </input>
+        </div>
+
+        <div v-for="(single_result, index) in model_result_rsp" :key="index">
+            <div :style="{ display: index == model_result_show_idx ? 'block' : 'none' }">
+
+                <table>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th> 天数 </th>
+                                <th> 平均每日收益 </th>
+                                <th> 中位数收益 </th>
+                                <th> 回测样本 </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr >
+                                <td> {{ single_result.summary.date_num }} (去掉尚无label后 {{single_result.summary.date_num_with_return }}) </td>
+                                <td> {{ to_percent(single_result.summary.return_all) }} </td>
+                                <td> {{ to_percent(single_result.summary.return_p50) }} </td>
+                                <td> {{ single_result.summary.count }} </td>
+                            </tr>
+                        </tbody>
+                </table>
+                <div :id="'line-chart-' + index"></div>
+                <div :id="'classify-chart-' + index"></div>
+                <table>
+                    <tr>
+                        <td>板块</td> 
+                        <td>股票数量</td>
+                        <td>股票样本数</td>
+                        <td>平均预估分</td>
+                        <td>推荐股票</td>
+                    </tr>
+                    <tr v-for="classify in single_result.classify">
+                        <td> {{ classify.category }}</td>
+                        <td> {{ classify.stock_size }} </td>
+                        <td> {{ classify.count }} </td>
+                        <td> {{ to_percent(classify.tokp_avg_pred) }}</td>
+                        <td>
+                            <ul>
+                                <li v-for="stock in classify.recommend_top_stock">
+                                    {{stock.date}} {{ stock.股票 }}  分数 {{ to_percent(stock.预估收益) }} 置信度{{to_percent(stock.置信度)}}
+                                </li>
+                            </ul>
+                        </td>
+                    </tr>
+                </table>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Index</th>
+                            <th>Stock</th>
+                            <th>Rank</th>
+                            <th>Estimated Return</th>
+                            <th>Actual Return</th>
+                            <td>Certainly</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="result in single_result.backtest">
+                            <td>{{ result.date }}</td>
+                            <td>{{ result.Index }}</td>
+                            <td>{{ result.股票 }}</td>
+                            <td>{{ result.rank }}</td>
+                            <td>{{ to_percent(result.预估收益) }}</td>
+                            <td>{{ to_percent(result.真实收益) }}</td>
+                            <td>{{ to_percent(result.置信度) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="my.js"></script>
+</body>
+</html>

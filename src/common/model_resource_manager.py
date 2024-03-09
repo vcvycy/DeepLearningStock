@@ -7,6 +7,8 @@ import re
 # from common.tushare_api import *
 class RM: 
     def ins_need_filter(self, ins, filters):
+        if not filters.get("enable"):
+            return 
         if filters["only_etf"]:
             return "ETF" not in ins.name #or "LOF" not in ins.name
         if "valid_tscode" in filters:
@@ -27,6 +29,7 @@ class RM:
                             need_filter = True
                             r = "fid_filter_%s" %(fid)
                             self.filter_reason[r] = self.filter_reason.get(r, 0) + 1
+                            # print("过滤: %s %s" %(ins.name, ins.date))
                             return True
         # 退市股过滤
         if "退" in ins.name:
@@ -52,40 +55,61 @@ class RM:
         filters = self.conf.get("train_data").get("filters")
         # 读取instance并初始化
         date2labels = {}
+        date2count = {}
         max_ins = self.conf.get("max_ins")
         self.filter_reason = {}
         for ins in enum_instance(train_files, max_ins if max_ins is not None else 1e10):
-            if ins.date < '20200601':
-                continue
+            # ###########
+            # # 由于我们在循环中修改列表，因此我们应该对原始列表进行复制处理
+            # # 我们可以使用切片来实现复制，[:] 将创建列表的一个副本
+            # features_to_keep = ins.feature[:]
+
+            # # 清除原始的 feature 列表
+            # del ins.feature[:]
+
+            # # 遍历所有 FeatureColumn，将不需要删除的添加回 ins.feature
+            # for feature in features_to_keep:
+            #     if feature.slot not in [8, 9, 10]:
+            #         ins.feature.add().CopyFrom(feature)
+            # ############ 临时代码
+            # if ins.date < '20200601':
+            #     continue
             if self.ins_need_filter(ins, filters):
                 continue
             date = ins.date
             label_key = self.conf["train_data"]["label"]["args"]["key"]
+            date2count[date] = date2count.get(date, 0) +1
             if label_key in ins.label:
                 date2labels[date] = date2labels.get(date, [])
                 date2labels[date].append(ins.label[label_key]) 
             self.instances.append(ins)
+        print("过滤后样本数: %s" %(len(self.instances)))
         logging.info("样本filter: %s" %(len(self.filter_reason)))
         for filter in self.filter_reason:
             logging.info("  样本filter: %s : %s" %(filter, self.filter_reason[filter]))
             
-        self.all_dates = list(date2labels)
+        self.all_dates = list(date2count)
         self.all_dates.sort()
         # 获取验证集的日期
         train_ins_percent = self.conf.get("train_data").get("train_ins_percent")
+        print(self.all_dates)
         if train_ins_percent is not None:
             train_ins_num = 0
             for date in self.all_dates:
-                if train_ins_num >= train_ins_percent * len(self.instances):
+                cur_ins_num = date2count[date]
+                if train_ins_num + cur_ins_num > train_ins_percent * len(self.instances):
                     self.validate_date = date
                     break
-                train_ins_num += len(date2labels.get(date, []))
+                train_ins_num += cur_ins_num
+                # print("train_ins_num: %s %s" %(date, train_ins_num))
             logging.info("训练集占比: %s 训练集样本数量: %s / %s" %(train_ins_percent, train_ins_num, len(self.instances)))
         else:
             self.validate_date = self.conf.get("train_data").get("validate_date")
         logging.info("验证集开始时间: %s" %(self.validate_date))
         # 每个日期对应的大盘均值
         for date in self.all_dates: 
+            if date not in date2labels:  # label还没有
+                continue
             labels = date2labels[date]
             labels.sort(key = lambda x : x)
             pct = 50

@@ -24,6 +24,8 @@ if __name__ == "__main__":
             break
         if args.ts_code is not None and  args.ts_code not in ins.ts_code and args.ts_code not in ins.name:
             continue
+        # if ins.date >= '20230101':
+        #     continue
         if args.date is not None and ins.date != args.date:
             continue
 

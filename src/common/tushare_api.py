@@ -9,6 +9,7 @@ import math
 import time
 import os
 import threading
+import functools
 def TushareDecorator(fun):  # 装饰器, 用于retry(如qps超过上线会被切断)
     lock = threading.Lock()
     def wrapper(*args, **kwargs):
@@ -41,6 +42,11 @@ class TushareApi:
     ts_code2basic = {}
     all_stock = []
     @staticmethod
+    def get_stock_company():
+        global client
+        df = client.stock_company()
+        return df
+    @staticmethod
     def init_client(api_key):
         global client
         return client
@@ -68,6 +74,7 @@ class TushareApi:
                 "name" : value["name"],
                 "category" : "etf"
             })
+            TushareApi.__ts_code2name[value["ts_code"]] = value['name']
             TushareApi.__ts_code2type[value["ts_code"]] = "etf"
         print("ETF总数 %s, 过滤后剩下: %s" %(df.shape[0], len(data)))
         # 拉取股票数据
@@ -96,6 +103,7 @@ class TushareApi:
                 "name" : value["name"],
                 "category" : "stock"
             })
+            TushareApi.__ts_code2name[value["ts_code"]] = value['name']
             TushareApi.__ts_code2type[value["ts_code"]] = "stock"
         # 指数
         df = client.index_basic(market = "SSE")
@@ -185,6 +193,31 @@ class TushareApi:
         else:
             raise Exception("unknow ts_code: %s" %(ts_code))
         return kline 
+
+    @TushareDecorator
+    @functools.lru_cache(maxsize=None)  # 无限缓存
+    def get_stock2classify():
+        global client
+        categories = client.index_classify(level='L1', src='SW2021')
+        tscode2cate = {}
+
+        for idx,value in categories.iterrows():
+            value = value.to_dict()
+            name = value['industry_name']
+            index_code = value['index_code']
+            for idx, item in client.index_member(index_code = index_code).iterrows():
+                item = item.to_dict()
+                if item['out_date'] is not None:
+                    continue
+                tscode = item['con_code']
+                if tscode not in tscode2cate:
+                    tscode2cate[tscode] = []
+                tscode2cate[tscode].append(name) 
+        #         print("%s %s %s" %(tscode, name, item['out_date']))
+        # break
+        # # index_member(index_code='850531.SI')
+        return tscode2cate
+
     @staticmethod
     @TushareDecorator
     def get_basic_by_ts_code(ts_code, start_date = "", end_date = ""):
@@ -215,6 +248,9 @@ def init():
     TushareApi.get_all_stocks()
 init()
 if __name__ == "__main__": 
+    tscode2categories = TushareApi.get_stock2classify()
+    for c in tscode2categories:
+        print("%s %s" %(c, tscode2categories[c]))
     # client = TushareApi.init_client("009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f") 
     # client.fund_basic(market='E') 
     
@@ -226,8 +262,9 @@ if __name__ == "__main__":
     # print(len(kline))
     # print(kline)
     # print(kline.get_ma_reverse_times(k = 30))
-    kline = TushareApi.get_kline_by_ts_code("000001.SZ", start_date= "20200601", end_date="")
-    print(kline)
+    # kline = TushareApi.get_kline_by_ts_code("000001.SZ", start_date= "20210601", end_date="")
+    # print(len(kline.candles))
+    # TushareApi.get_stock_company()
     # print(kline.get_ma_reverse_times(k = 10))
     # kline.draw()
     # print(kline[0])

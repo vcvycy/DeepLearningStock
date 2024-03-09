@@ -7,10 +7,10 @@ source:                 # 从哪些地方获取数据
     class: TushareSource
     args:
       api_key: 009c49c7abe2f2bd16c823d4d8407f7e7fcbbc1883bf50eaae90ae5f
-      start_date:            "20200601"  # 620个交易日
+      start_date:            "20210601"  # 650个交易日
       end_date  :            ""
       max_workers:           10     # 线程池数量
-      sample_recent_days:    1  # 每个股票采样多少个样本
+      sample_recent_days:    8  # 每个股票采样多少个样本
       sample_min_train_days: 200    # 至少N天数据作为训练数据
       enable_etf : true            # etf是否加入
       enable_stock: true

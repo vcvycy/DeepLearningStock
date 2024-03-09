@@ -1,19 +1,18 @@
 log_file : "../log/model_train.log"
 json_result: "../log/result.json"
 
-# max_ins: 200000   # debug，最多读多少数据
+# max_ins: 10000   # debug，最多读多少数据
 train_files:  # 只读第一个
   # 全量股票
-  - ../training_data/data.daily.20240126_1924
-  - ../training_data/data.daily.20240125_1734
-  - ../training_data/data.daily.20240124_1920
-  - ../training_data/data.daily.20240123_1802
+  - ../training_data/data.daily.20240308_1905
+  - ../training_data/data.daily.20240228_0120
   # - ../training_data/data.daily.20240120_2111  #ETF
 
 #预处理instance: 处理label, 过滤fid等
 train_data:
   train_ins_percent: 0.8          # 训练集占比(优先于下面这个参数)
   filters: 
+    enable: true
     only_etf: false
     valid_tscode : 
       enable : true
@@ -21,11 +20,27 @@ train_data:
     fid_filter:
       enable: false
       fids:
-        # - 1444932513133819623
+        - 958543753377806055 # 过滤掉平均跌幅2%的FID
+        - 967566788535408665
+        - 964283573987336748
+        - 957627231141167737
+        - 960528837522894319
+        # v2
+        - 39809429394224871
+        - 74921704176550521
+        - 75838226413188839
+        - 81578047022719532
+        - 73256294007194698
+        - 92936102686032505
+        - 99592445532201516
+        - 91270692516676682
+        - 928254776968372780
+        - 938942996155189327
+        - 973976219481293898
   # validate_date : "20220101"      # 验证集: 没有label且时间在这个后面
   label:
     args: 
-      # key : next_14d_close_price
+      # key : next_3d_7d_mean_price
       key : next_7d_14d_mean_price
   min_fid_occurrence : 0    # 每个fid最少出现几次，低于这个次数，程序直接退出报错
   debug:                 # debug 函数
@@ -35,8 +50,9 @@ train_data:
       # - 1450672333743350316
       # - 1453955548291422233
     slot_whitelist: 
-      # - 5
-      # - 134
+      # - 1
+      # - 2
+      # - 3
       # - 135
       # - 136 
       # - 137
@@ -47,6 +63,9 @@ train_data:
       # - 53
       # - 54
     slot_blacklist:
+      # - 8
+      # - 9 
+      # - 10
       # - 82
       # - 83
       # - 11
