@@ -201,6 +201,18 @@ def get_classify_analyse(items, topk, dedup):
     results.sort(key = lambda x : - x['tokp_avg_pred'])
     return results
 
+
+@bottle.post("/merge_results")
+@decorator_post_method
+@functools.lru_cache(maxsize=None)  # 无限缓存
+def merge_results(path, **kwargs):
+    from result_reader import merge
+    print("merge多个模型: %s" %(path))
+    if path.endswith(".merged") or os.path.exists(path+".merged"):
+        return "模型已经合并过了"
+    save_path = merge(path)
+    return {"save_path" : save_path}
+
 @bottle.post("/model_result_process")
 @decorator_post_method
 @functools.lru_cache(maxsize=None)  # 无限缓存

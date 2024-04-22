@@ -61,6 +61,15 @@ my_vue = new Vue({
             my_vue.model_result_in_progress = true;
             this.post_call('model_result_process', this.model_result_req, parse_rsp);
         },
+        mergeModelResult() {
+            if (!this.model_result_req.path) return;
+            function parse_rsp(response) {
+                alert(response.data); 
+                my_vue.model_result_in_progress = false;
+            }
+            my_vue.model_result_in_progress = true;
+            this.post_call('merge_results', {'path' : this.model_result_req.path}, parse_rsp);
+        },
         updateCharts() {
             this.$nextTick(() => {
                 this.model_result_rsp.forEach((result, index) => {

@@ -71,7 +71,10 @@
                     <td colspan="2" style="color: red; text-align: center;">模型请求中....</td>
                 </tr>
                 <tr v-if="model_result_in_progress == false">
-                    <td colspan="2" style="color: red; text-align: center;"><button v-on:click="fetchModelResult">Go</button></td>
+                    <td colspan="2" style="color: red; text-align: center;">
+                        <button v-on:click="fetchModelResult">Go</button>
+                        <button v-on:click="mergeModelResult">Merge Model</button>
+                    </td>
                 </tr>
             </table>
 

@@ -4,8 +4,7 @@ json_result: "../log/result.json"
 # max_ins: 10000   # debug，最多读多少数据
 train_files:  # 只读第一个
   # 全量股票
-  - ../training_data/data.daily.20240308_1905
-  - ../training_data/data.daily.20240228_0120
+  - ../training_data/data.daily.20240413_1056
   # - ../training_data/data.daily.20240120_2111  #ETF
 
 #预处理instance: 处理label, 过滤fid等
